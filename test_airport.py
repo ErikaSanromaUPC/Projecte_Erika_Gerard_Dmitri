@@ -1,6 +1,6 @@
 from airport import (Airport, SetSchengen, PrintAirport,
                      AddAirport, RemoveAirport, SaveSchengenAirports, LoadAirports,PlotAirports,MapAirports)
-
+from aircraft import (PlotArrivals,LoadArrivals)
 
 print("=" * 50)
 print("TEST 1: Airport() and PrintAirport()")
@@ -62,3 +62,8 @@ print(f"kml file generated {kml_file}. You can open it with google earth.")
 print("=" * 50)
 print("ALL TESTS COMPLETED")
 print("=" * 50)
+
+#----
+test_aircraft = LoadArrivals("Arrivals.txt")
+print("Generating plot 2")
+PlotArrivals(test_aircraft)
