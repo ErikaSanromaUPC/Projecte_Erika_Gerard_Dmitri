@@ -1,12 +1,14 @@
 def IsSchengenAirport(code):
-    Schengen_prefixes = ['LO', 'EB', 'LK', 'LC', 'EK', 'EE', 'EF', 'LF', 'ED', 'LG', 'EH', 'LH','BI','LI', 'EV', 'EY', 'EL', 'LM', 'EN', 'EP', 'LP', 'LZ', 'LJ', 'LE', 'ES','LS']
-    prefix=code[:2]
     if not code or len(code) < 2:
         return False
-    elif prefix in Schengen_prefixes: #TODO: Canviar per un while
-        return True
-    else:
-        return False
+    Schengen_prefixes = ['LO', 'EB', 'LK', 'LC', 'EK', 'EE', 'EF', 'LF', 'ED', 'LG', 'EH', 'LH','BI','LI', 'EV', 'EY', 'EL', 'LM', 'EN', 'EP', 'LP', 'LZ', 'LJ', 'LE', 'ES','LS']
+    prefix=code[:2]
+    i=0
+    while i<len(Schengen_prefixes):
+        if prefix==Schengen_prefixes[i]:
+            return True
+        i+=1
+    return False
 
 class Airport:
     def __init__(self, code, latitude, longitude):
@@ -42,7 +44,7 @@ def LoadAirports(filename):
             data = airports_file.read() #data és per llegir totes les línies del text
             Lines = data.splitlines() #Lines és per separar cada línia del text
             i=1
-            while i < len(Lines): #TODO: fer que si el format està malament que se salti la línia
+            while i < len(Lines): #TODO: fer que si el format està malament que se salti la línia (En teoria ja està fet perque si les parts no son 3 no fa res passa al seguent)
                 parts=Lines[i].split()
                 if len(parts) == 3:
                     code = parts[0]
@@ -105,7 +107,7 @@ def RemoveAirport(airports, code):
 
 import matplotlib.pyplot as plt
 
-def PlotAirports (airports): #TODO: S'ha de posar amb 2 barres stacked
+def PlotAirports (airports): #TODO: S'ha de posar amb 2 barres stacked              FET!!!
     schengen=0
     i=0
     while i < len(airports):
@@ -113,10 +115,10 @@ def PlotAirports (airports): #TODO: S'ha de posar amb 2 barres stacked
             schengen += 1
         i+=1
     non_schengen=len(airports)-schengen
-
-    plt.bar(["Schengen", "No Schengen"], [schengen, non_schengen], color=["#e1c9ff", "#ccffc9"])
-    plt.title("Schengen vs Non-Schengen Airports")
-    plt.ylabel("Number of airports")
+    plt.bar("Airports", [schengen], color="#e1c9ff", label="Schengen")
+    plt.bar("Airports", [non_schengen], bottom=[schengen], color="#ccffc9", label="No Schengen")
+    plt.title("Schengen Airports")
+    plt.ylabel("Count")
     plt.show()
 
 def MapAirports(airports, filename="airports.kml"):

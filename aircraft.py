@@ -7,7 +7,7 @@ def LoadArrivals(filename):
             data = arrivals_file.read() #data és per llegir totes les línies del text
             Lines = data.splitlines() #Lines és per separar cada línia del text
             i=1
-            while i < len(Lines): #TODO: fer que si el format està malament que se salti la línia
+            while i < len(Lines): #TODO: fer que si el format està malament que se salti la línia (En teoria ja està fet perque si les parts no son 4 no fa res passa al seguent)
                 parts=Lines[i].split()
                 if len(parts) == 4:
                     aircraft_id = parts[0]
@@ -56,3 +56,33 @@ def PlotArrivals (aircrafts):
     plt.xlabel("Hour of the day")
     plt.ylabel("Number of aircrafts")
     plt.show()
+
+def SaveFlights(aircrafts, filename):
+    if not aircrafts:
+        print("Error: The aircraft list is empty. No file created.")
+        return -1
+    try:
+        with open(filename, "w") as f:
+            f.write("AIRCRAFT ORIGIN ARRIVAL AIRLINE\n")
+            i = 0
+            while i < len(aircrafts):
+                Line = aircrafts[i]
+                id_f = Line.aircraft_id
+                origin_f = Line.origin_airport
+                time_f = Line.arrival_time
+                airline_f = Line.airline
+                if id_f=="":
+                    id_f="-"
+                if origin_f=="":
+                    origin_f="-"
+                if time_f=="":
+                    time_f="-"
+                if airline_f=="":
+                    airline_f="-"
+                f.write(f"{id_f} {origin_f} {time_f} {airline_f}\n")
+                i += 1
+        return 0
+    except Exception as e: #Si per alguna raó no es pot escriure al fitxer o el que sigui
+        print(f"Error saving file: {e}")
+        return -1
+
