@@ -55,15 +55,10 @@ print("Generating plot")
 PlotAirports(test_airport)
 
 # Genera arxiu kml
-kml_file = MapAirports(test_airport, "my_airports.kml")
+kml_file = MapAirports(test_airport, "test_airports_display.kml")
 print(f"kml file generated {kml_file}. You can open it with google earth.")
 #Final
 
 print("=" * 50)
 print("ALL TESTS COMPLETED")
 print("=" * 50)
-
-#----
-test_aircraft = LoadArrivals("Arrivals.txt")
-print("Generating plot 2")
-PlotArrivals(test_aircraft)

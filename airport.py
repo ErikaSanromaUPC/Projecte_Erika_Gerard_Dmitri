@@ -119,6 +119,7 @@ def PlotAirports (airports): #TODO: S'ha de posar amb 2 barres stacked          
     plt.bar("Airports", [non_schengen], bottom=[schengen], color="#ccffc9", label="No Schengen")
     plt.title("Schengen Airports")
     plt.ylabel("Count")
+    plt.legend()
     plt.show()
 
 def MapAirports(airports, filename="airports.kml"):
@@ -126,7 +127,6 @@ def MapAirports(airports, filename="airports.kml"):
      #  f.write('<?xml version="1.0" encoding="UTF-8"?>\n')
         f.write('<kml xmlns="http://www.opengis.net/kml/2.2">\n')
         f.write('<Document>\n')
-
         i=0
         while i < len(airports):
             if airports[i].schengen:
@@ -143,3 +143,11 @@ def MapAirports(airports, filename="airports.kml"):
             i+=1
         f.write("</Document>\n</kml>")
     return filename
+
+def FindAirport(airports, code): #Funció per trobar un aeroport en específic, perquè més endavant estem buscant coses del de Barcelona
+    i = 0
+    while i < len(airports):
+        if airports[i].code == code:
+            return airports[i]
+        i += 1
+    return -1
