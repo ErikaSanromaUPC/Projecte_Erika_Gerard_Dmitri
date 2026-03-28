@@ -178,8 +178,8 @@ frame_right.pack(side="right", fill="both", expand=True, padx=5)
 
 tk.Button(frame_right, text="Load Arrivals File", command=load_arrivals).pack(fill="x", pady=2)
 tk.Button(frame_right, text="Plot Arrival Frequency", command=plot_arrivals).pack(fill="x", pady=2)
-tk.Button(frame_right, text="Plot Airlines Share", command=plot_airlines).pack(fill="x", pady=2)
-tk.Button(frame_right, text="Plot Flight Origins (Schengen)", command=plot_type).pack(fill="x", pady=2)
+tk.Button(frame_right, text="Plot Flights per Airline", command=plot_airlines).pack(fill="x", pady=2)
+tk.Button(frame_right, text="Plot Schengen Origin Flights", command=plot_type).pack(fill="x", pady=2)
 tk.Button(frame_right, text="Map Flight Trajectories (KML)", command=map_flights).pack(fill="x", pady=2)
 tk.Button(frame_right, text="Check Long Distance Flights", command=check_long_distance).pack(fill="x", pady=2)
 
