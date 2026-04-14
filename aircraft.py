@@ -154,23 +154,23 @@ def MapFlights(aircrafts, airports,filename="flights.kml"):
                 else:
                     color="ffc9ffcc"
                 f.write(f"""    
-            <Placemark>
-                <name>{aircrafts[i].aircraft_id}({aircrafts[i].origin_airport} to LEBL)</name>
-                <Style>
-                        <LineStyle>
-                            <color>{color}</color>
-                            <width>2</width>
-                        </LineStyle>
-                </Style>
-                <LineString>
-                    <altitudeMode>relativeToGround</altitudeMode>
-                    <coordinates>
-                        {airport_origin.longitude},{airport_origin.latitude},0
-                        {LEBL.longitude},{LEBL.latitude},0
-                    </coordinates>
-                </LineString>
-            </Placemark>
-                """)
+                            <Placemark>
+                                <name>{aircrafts[i].aircraft_id} ({aircrafts[i].origin_airport} to LEBL)</name>
+                                <Style>
+                                    <LineStyle>
+                                        <color>{color}</color>
+                                        <width>3</width>
+                                    </LineStyle>
+                                </Style>
+                                <LineString>
+                                    <tessellate>1</tessellate>
+                                    <altitudeMode>clampToGround</altitudeMode>
+                                    <coordinates>
+                                        {airport_origin.longitude},{airport_origin.latitude},0 {LEBL.longitude},{LEBL.latitude},0
+                                    </coordinates>
+                                </LineString>
+                            </Placemark>
+                                """)
             i += 1
         f.write("</Document>\n</kml>")
     return filename
