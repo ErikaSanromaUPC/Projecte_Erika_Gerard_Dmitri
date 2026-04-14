@@ -2,6 +2,8 @@ import tkinter as tk
 from tkinter import filedialog, messagebox
 from airport import *
 from aircraft import *
+import os
+import platform
 
 airports = []
 arrivals = []
@@ -67,7 +69,16 @@ def map_airports():
         return
     filename = "airports_display.kml"
     MapAirports(airports, filename)
-    messagebox.showinfo("Map Generated", f"The file {filename} has been created.\nOpen it with Google Earth.")
+    if messagebox.askyesno("Map Generated", f"File {filename} created. Open in Google Earth?"):
+        try:
+            if platform.system() == "Windows":
+                os.startfile(filename)
+            elif platform.system() == "Darwin":
+                os.system(f"open {filename}")
+            else:
+                os.system(f"xdg-open {filename}")
+        except Exception as e:
+            messagebox.showerror("Error", f"Error opening file: {e}")
 
 def show_airports():
     text.delete("1.0", tk.END) #Això borra tot, perquè no s'apilin els aeroports carregats
@@ -110,9 +121,20 @@ def map_flights(): #Genera el mapa KML de trajectories cap a LEBL.
     if not arrivals or not airports:
         messagebox.showwarning("Warning", "Need both airports and arrivals loaded.")
         return
+    filename = "flights_trajectories.kml"
     res = MapFlights(arrivals, airports, "flights_trajectories.kml")
     if res != -1:
-        messagebox.showinfo("Success", "KML map 'flights_trajectories.kml' created.")
+        # Preguntem a l'usuari si el vol obrir ara
+        if messagebox.askyesno("Success", f"KML '{filename}' created. Do you want to open it now?"):
+            try:
+                if platform.system() == "Windows":
+                    os.startfile(filename)
+                elif platform.system() == "Darwin":  # macOS
+                    os.system(f"open {filename}")
+                else:  # Linux
+                    os.system(f"xdg-open {filename}")
+            except Exception as e:
+                messagebox.showerror("Error", f"Could not open file: {e}")
 
 def check_long_distance(): #Mostra en una nova finestra els vols que requereixen inspecció (>2000km).
     if not arrivals or not airports:

@@ -189,7 +189,7 @@ def HaversineDistance(lat1, lon1, lat2, lon2):
     distance = R * c
     return distance
 
-def LongDistanceArrivals(aircrafts,airports):
+def LongDistanceArrivals(aircrafts,airports): #TODO: que es vegi a la pantalla de sota
     if not aircrafts:
         print("Error: The aircraft list is empty. No plot to show.")
         return -1
