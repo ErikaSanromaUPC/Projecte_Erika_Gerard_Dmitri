@@ -34,3 +34,24 @@ def SetGates(area, init_gate, end_gate, prefix): #Crea la llista de portes per a
         i += 1
     return 0
 
+def LoadAirlines(terminal,t_name): # Llegeix les aerolinies dels txt
+    filename = f"{t_name}_Airlines.txt" # Crea el nom del fitxer que ha d'obrir
+    if not os.path.exists(filename): #Prova que el fitxer existeixi
+        print(f"Error: Fitxer {filename} no trobat.")
+        return -1
+    terminal.airlines = []  # Dropping previous list
+    try:
+        with open(filename, 'r') as f:
+            data = f.read() #data és per llegir totes les línies del text
+            lines = data.splitlines()
+            i = 0
+            while i < len(lines):
+                parts = lines[i].strip().split('\t')  # Format: Nom \t ICAO strip treu els esapis dels extrems
+                if len(parts) >= 2:
+                    icao_code = parts[1]
+                    terminal.airlines.append(icao_code)
+                i += 1
+        return 0
+    except Exception as e:
+        print(f"Error reading airlines: {e}")
+        return -1
