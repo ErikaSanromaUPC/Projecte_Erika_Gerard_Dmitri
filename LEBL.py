@@ -129,7 +129,6 @@ def SearchTerminal(bcn, airline_code):
     terminales = bcn.terminals
     indice = 0
     cantidad = len(terminales)
-
     while indice < cantidad:
         t = terminales[indice]
 
@@ -152,20 +151,31 @@ def AssignGate(bcn, aircraft, is_schengen):
         return -1  # Aerolínia no trobada a cap terminal
 
     # 2. Tipus de vol (Schengen o no)
-    required_type = "Schengen" if is_schengen else "non-Schengen"
+    if is_schengen:
+        required_type="Schengen"
+    else:
+        required_type="non-Schengen"
 
     # 3. Buscar porta a la terminal i àrea correcta
-    for t in bcn.terminals:
-        if t.name == t_name:
-            for area in t.boarding_areas:
-                if area.type == required_type:
-                    for gate in area.gates:
-                        if not gate.occupied:
-                            # Assignació!
-                            gate.occupied = True
-                            gate.aircraft_id = aircraft.aircraft_id
-                            return gate.name
-    return -1  # No hi ha portes lliures
+    i=0
+    while i<len(bcn.terminals):
+        if t_name == bcn.terminals[i].name: #recorre fins que coincideix la terminal
+            j=0
+            while j<len(bcn.terminals(i).boarding_areas):
+                area=bcn.terminals(i).boarding_areas[j]
+                if area.type==required_type:    #busca si es schengen o no
+                    k=0
+                    while k<len(area.gates):
+                        if not area.gates[k].occupied: #que no estigui ocupada
+                            area.gates[k].occupied=True
+                            area.gates[k].aircaft_id=aircraft.aircaft_id
+                            return area.gates[k].name
+                        k=k+1
+                j=j+1
+        i=i+1
+    return -1  # Per si no hi ha portes lliures
+
+def GateOccupancy(bcn):
 
 # --- TEST SECTION ---
 if _name_ == "_main_":
