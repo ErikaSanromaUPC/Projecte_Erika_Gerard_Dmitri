@@ -2,16 +2,18 @@ import tkinter as tk
 from tkinter import filedialog, messagebox
 from airport import *
 from aircraft import *
+from LEBL import * # Importa tus clases BarcelonaAP, Terminal, etc.
 import os
 import platform
 
 airports = []
 arrivals = []
+bcn_airport = None
 
 def load_airports(): #Obre un diàleg per carregar l'arxiu d'airports i actualitza la llista
-    filename = filedialog.askopenfilename(filetypes=[("Text files", "*.txt"), ("All files", "*.*")])
+    filename = filedialog.askopenfilename()
     if filename:
-        global airports
+        global airports #Això fa que agafi airports principal
         airports = LoadAirports(filename)
         show_airports()
 
@@ -157,6 +159,41 @@ def check_long_distance(): #Mostra en una nova finestra els vols que requereixen
             t.insert(tk.END, f"ID: {long_dist[i].aircraft_id} from {long_dist[i].origin_airport}\n")
             i += 1
 
+def load_lebl_structure(): # Carrega l'arxiu LEBL.txt i genera l'estructura.
+    filename = filedialog.askopenfilename()
+    if filename:
+        global bcn_airport
+        bcn_airport = LoadAirportStructure(filename)
+        if bcn_airport != -1:
+            messagebox.showinfo("Success", f"LEBL structure loaded. {len(bcn_airport.terminals)} terminals found.")
+        else:
+            messagebox.showerror("Error", "Could not load LEBL structure.")
+
+
+def assign_gates_to_arrivals(): #Assigna gates a tots els vols carregats.
+    if not bcn_airport or not arrivals:
+        messagebox.showwarning("Warning", "Load LEBL structure and Arrivals first!")
+        return
+
+    assigned_count = 0
+    i = 0
+    while i < len(arrivals):
+        gate_name = AssignGate(bcn_airport, arrivals[i])
+        if gate_name != -1:
+            assigned_count += 1
+        i += 1
+    messagebox.showinfo("Assignment Complete", f"Assigned {assigned_count}/{len(arrivals)} aircrafts to gates.")
+
+
+def plot_gate_occupancy():
+    if not bcn_airport:
+        messagebox.showwarning("Warning", "LEBL structure not loaded.")
+        return
+
+    # Llamamos directamente a la función que dibuja el mapa tipo esquema
+    # que pusimos en LEBL.py
+    plot_airport_schema(bcn_airport)
+
 root = tk.Tk()
 root.title("Airport Manager v2 (Erika, Gerard, Dmitri)")
 root.geometry("850x650")
@@ -212,5 +249,13 @@ display_frame.pack(side="bottom", fill="both", expand=True, padx=15, pady=10)
 # Àrea de text central perquè quedi més bonic
 text = tk.Text(display_frame, height=15,  font=("Courier", 10))
 text.pack(side="left", fill="both", expand=True)
+
+# Frame per LEBL Gate Management (Centre o Dreta)
+frame_gates = tk.LabelFrame(top_frame, text=" LEBL Gate Management ", padx=10, pady=10)
+frame_gates.pack(side="left", fill="both", expand=True, padx=5)
+
+tk.Button(frame_gates, text="Load LEBL Structure", command=load_lebl_structure, bg="#d1e7ff").pack(fill="x", pady=2)
+tk.Button(frame_gates, text="Assign Gates to Flights", command=assign_gates_to_arrivals).pack(fill="x", pady=2)
+tk.Button(frame_gates, text="Show Gate Occupancy (Extra)", command=plot_gate_occupancy, bg="#fff2cc").pack(fill="x", pady=2)
 
 root.mainloop()

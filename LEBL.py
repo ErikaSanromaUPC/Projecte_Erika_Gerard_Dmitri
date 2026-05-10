@@ -1,4 +1,6 @@
 import os
+import matplotlib.pyplot as plt
+import matplotlib.patches as patches
 class Gate:
     def __init__(self, name):
         self.name = name
@@ -162,18 +164,18 @@ def SearchTerminal(bcn, airline_code):
 
     return ""
 
-def AssignGate(bcn, aircraft, is_schengen):
-    """Busca la primera porta lliure segons terminal i tipus de vol."""
+def AssignGate(bcn, aircraft): #Busca la primera porta lliure segons terminal i tipus de vol.
+    from airport import IsSchengenAirport  # Import local per evitar líos
     # 1. Trobar terminal per l'aerolínia
     t_name = SearchTerminal(bcn, aircraft.airline)
     if not t_name:
         return -1  # Aerolínia no trobada a cap terminal
 
     # 2. Tipus de vol (Schengen o no)
-    if is_schengen:
-        required_type="Schengen"
+    if IsSchengenAirport(aircraft.origin_airport):
+        required_type = "Schengen"
     else:
-        required_type="non-Schengen"
+        required_type = "non-Schengen"
 
     # 3. Buscar porta a la terminal i àrea correcta
     i=0
@@ -187,7 +189,7 @@ def AssignGate(bcn, aircraft, is_schengen):
                     while k<len(area.gates):
                         if not area.gates[k].occupied: #que no estigui ocupada
                             area.gates[k].occupied=True
-                            area.gates[k].aircaft_id=aircraft.aircaft_id
+                            area.gates[k].aircraft_id=aircraft.aircraft_id
                             return area.gates[k].name
                         k=k+1
                 j=j+1
@@ -195,6 +197,100 @@ def AssignGate(bcn, aircraft, is_schengen):
     return -1  # Per si no hi ha portes lliures
 
 
+def plot_airport_schema(bcn):  # Dibuixar mapa visual
+    if not bcn:
+        return
+
+    fig, ax = plt.subplots(figsize=(16, 10))
+    ax.set_title(f"Airport Map: {bcn.code}", fontsize=18, fontweight='bold', pad=20)
+
+    terminal_x = 0
+    gate_width = 0.5
+    gate_height = 0.25
+
+    # 1. Bucle per dibuixar les terminals
+    t_idx = 0
+    while t_idx < len(bcn.terminals):
+        terminal = bcn.terminals[t_idx]
+        num_areas = len(terminal.boarding_areas)
+        t_width = num_areas * 5
+
+        # Passadís horitzontal
+        main_corridor = patches.Rectangle((terminal_x, 15), t_width, 0.6, color='#1a5276')
+        ax.add_patch(main_corridor)
+        ax.text(terminal_x, 15.8, terminal.name, fontsize=16, fontweight='bold', color='#1a5276')
+
+        # 2. Bucle per dibuixar les Boarding Areas
+        a_idx = 0
+        while a_idx < num_areas:
+            area = terminal.boarding_areas[a_idx]
+            area_x_center = terminal_x + (a_idx * 5) + 2.5
+
+            # Passadís vertical
+            area_corridor = patches.Rectangle((area_x_center - 0.2, 2), 0.4, 16, color='#34495e', alpha=0.8)
+            ax.add_patch(area_corridor)
+            ax.text(area_x_center - 0.8, 1.2, f"BA {area.name.upper()}", fontsize=11, fontweight='bold')
+
+            # 3. Bucle de Gates
+            g_idx = 0
+            while g_idx < len(area.gates):
+                gate = area.gates[g_idx]
+
+                #CÀLCUL DE POSICIÓ
+                if g_idx % 2 == 0:
+                    side = -1  # Esquerra
+                else:
+                    side = 1  # Dreta
+
+                level = 14.2 - (g_idx // 2) * 0.42
+
+                if level >= 1:
+                    #CÀLCUL DE GATE_X
+                    if side == -1:
+                        gate_x = area_x_center + (side * 0.8) - (gate_width / 2) #pels rectangles
+                    else:
+                        gate_x = area_x_center + (side * 0.8)
+
+                    #COLOR
+                    if gate.occupied:
+                        color = '#e74c3c'  # Vermell
+                    else:
+                        color = '#2ecc71'  # Verd
+
+                    rect = patches.Rectangle((gate_x, level), gate_width, gate_height, color=color, zorder=3)
+                    ax.add_patch(rect)
+
+                    # Línia de connexió al passadís
+                    ax.plot([area_x_center, gate_x + gate_width / 2],
+                            [level + gate_height / 2, level + gate_height / 2],
+                            color='#7f8c8d', lw=1, zorder=1)
+
+                    # Text del avió
+                    if gate.occupied:
+                        #ALINEACIÓ TEXT
+                        if side == -1:
+                            ha_value = 'right'
+                        else:
+                            ha_value = 'left'
+
+                        ax.text(gate_x + side * 0.1, level - 0.1, gate.aircraft_id, fontsize=7,
+                                ha=ha_value, fontweight='bold', color='black')
+
+                    # Número de la gate
+                    ax.text(gate_x, level + 0.3, gate.name.split('G')[-1], fontsize=6, color='gray')
+
+                g_idx += 1  # Incrementar index gates
+            a_idx += 1  # Incrementar index àrees
+
+        terminal_x += t_width + 4
+        t_idx += 1  # Incrementar index terminals
+
+    ax.set_xlim(-2, terminal_x)
+    ax.set_ylim(0, 17)
+    ax.axis('off')
+    plt.tight_layout()
+    plt.show()
+    # TODO: REVISAR LA NOMENCLATURA DE LES GATES I MILLORAR QUE NO ES VEGI SOLAPAT
 # --- TEST SECTION ---
 if __name__ == "__main__":
 
