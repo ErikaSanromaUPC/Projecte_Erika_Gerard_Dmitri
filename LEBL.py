@@ -105,6 +105,25 @@ def LoadAirportStructure(filename):
         print(f"Error carregant l'estructura: {e}")
         return -1
 
+def GateOccupancy (bcn):
+    gates=[]
+    i=0
+    while i<len(bcn.terminals):
+        j=0
+        while j<len(bcn.terminals[i].boarding_areas):
+            area=bcn.terminals[i].boarding_areas[j]
+            k=0
+            while k<len(area.gates):
+                gate=area.gates[k]
+                if gate.occupied:
+                    gates.append((gate.name, "occupied", gate.aircraft_id))
+                else:
+                    gates.append((gate.name, "free", None))
+                k=k+1
+            j=j+1
+        i=i+1
+    return gates
+
 def IsAirlineInTerminal(terminal, name):
     # 1. Si el nombre es un "null string" (vacío), devolvemos False y código -1
     if name == "":
@@ -161,8 +180,8 @@ def AssignGate(bcn, aircraft, is_schengen):
     while i<len(bcn.terminals):
         if t_name == bcn.terminals[i].name: #recorre fins que coincideix la terminal
             j=0
-            while j<len(bcn.terminals(i).boarding_areas):
-                area=bcn.terminals(i).boarding_areas[j]
+            while j<len(bcn.terminals[i].boarding_areas):
+                area=bcn.terminals[i].boarding_areas[j]
                 if area.type==required_type:    #busca si es schengen o no
                     k=0
                     while k<len(area.gates):
@@ -175,13 +194,44 @@ def AssignGate(bcn, aircraft, is_schengen):
         i=i+1
     return -1  # Per si no hi ha portes lliures
 
-def GateOccupancy(bcn):
 
 # --- TEST SECTION ---
-if _name_ == "_main_":
-    # Test simple de càrrega
+if __name__ == "__main__":
+
+    # TEST 1: SetGates
+    area = BoardingArea("a", "Schengen")
+    result = SetGates(area, 1, 5, "T1BAaG")
+    print("TEST SetGates:")
+    print(result)           # Esperado: 0
+    print(len(area.gates))  # Esperado: 5
+    print(area.gates[0].name)  # Esperado: T1BAaG1
+    print()
+
+    # TEST 2: IsAirlineInTerminal
+    terminal = Terminal("T1")
+    terminal.airlines = ["IBE", "VLG", "RYR"]
+    print("TEST IsAirlineInTerminal:")
+    print(IsAirlineInTerminal(terminal, "IBE"))  # Esperado: True, 0
+    print(IsAirlineInTerminal(terminal, "AAA"))  # Esperado: False, 0
+    print(IsAirlineInTerminal(terminal, ""))     # Esperado: False, -1
+    print()
+
+    # TEST 3: LoadAirportStructure
+    print("TEST LoadAirportStructure:")
     bcn = LoadAirportStructure("LEBL.txt")
-    if bcn != -1:
-        print(f"Aeroport {bcn.code} carregat amb {len(bcn.terminals)} terminals.")
-        for t in bcn.terminals:
-            print(f"Terminal {t.name} té {len(t.boarding_areas)} àrees i {len(t.airlines)} aerolínies.")
+    print(bcn)              # Esperado: objeto BarcelonaAP, no -1
+    print(bcn.code)         # Esperado: LEBL
+    print(len(bcn.terminals))  # Esperado: numero de terminals
+    print()
+
+    # TEST 4: SearchTerminal
+    print("TEST SearchTerminal:")
+    print(SearchTerminal(bcn, "IBE"))  # Esperado: nom de la terminal
+    print(SearchTerminal(bcn, "XXX"))  # Esperado: ""
+    print()
+
+    # TEST 5: GateOccupancy
+    print("TEST GateOccupancy:")
+    gates = GateOccupancy(bcn)
+    print(len(gates))       # Esperado: total de gates
+    print(gates[0])         # Esperado: (nom, "free", None)
