@@ -202,10 +202,10 @@ def plot_airport_schema(bcn):  # Dibuixar mapa visual
         return
 
     fig, ax = plt.subplots(figsize=(16, 10))
-    ax.set_title(f"Airport Map: {bcn.code}", fontsize=18, fontweight='bold', pad=20)
+    ax.set_title(f"Airport Map: {bcn.code}", fontsize=18, fontweight='bold', pad=20) #TÍTOL
 
-    terminal_x = 0
-    gate_width = 0.5
+    terminal_x = 0 #POSICIÓ 0 DEL PAPER
+    gate_width = 0.5 #MIDA DE LES GATES
     gate_height = 0.25
 
     # 1. Bucle per dibuixar les terminals
@@ -213,10 +213,10 @@ def plot_airport_schema(bcn):  # Dibuixar mapa visual
     while t_idx < len(bcn.terminals):
         terminal = bcn.terminals[t_idx]
         num_areas = len(terminal.boarding_areas)
-        t_width = num_areas * 5
+        t_width = num_areas * 5 #AMPLADA DE LA TERMINAL EN BASE A LES AREES QUE TENIM
 
         # Passadís horitzontal
-        main_corridor = patches.Rectangle((terminal_x, 15), t_width, 0.6, color='#1a5276')
+        main_corridor = patches.Rectangle((terminal_x, 15), t_width, 0.6, color='#1a5276') #PASSADÍS PRINCIPAL
         ax.add_patch(main_corridor)
         ax.text(terminal_x, 15.8, terminal.name, fontsize=16, fontweight='bold', color='#1a5276')
 
@@ -242,7 +242,7 @@ def plot_airport_schema(bcn):  # Dibuixar mapa visual
                 else:
                     side = 1  # Dreta
 
-                level = 14.2 - (g_idx // 2) * 0.40
+                level = 14.2 - (g_idx // 2) * 0.40 #ALÇADA DE LA PORTA
 
                 if level >= -10:
                     #CÀLCUL DE GATE_X
@@ -275,9 +275,15 @@ def plot_airport_schema(bcn):  # Dibuixar mapa visual
 
                         ax.text(gate_x + side * 0.1, level + gate_height/2, gate.aircraft_id, fontsize=5,
                                 ha=ha_value, fontweight='bold', color='black')
+                        ax.text(gate_x, level + 0.3, gate.name.split('G')[-1], fontsize=6, color='gray')
+                    else:
+                        if side == -1:
+                            ha_value = 'right'
+                        else:
+                            ha_value = 'left'
 
-                    # Número de la gate
-                    ax.text(gate_x, level + 0.3, gate.name.split('G')[-1], fontsize=6, color='gray')
+                        # Número de la gate
+                        ax.text(gate_x + side * 0.1, level + gate_height / 2, gate.name, fontsize=4, ha=ha_value, color='gray', fontstyle='italic')
 
                 g_idx += 1  # Incrementar index gates
             a_idx += 1  # Incrementar index àrees
@@ -290,7 +296,6 @@ def plot_airport_schema(bcn):  # Dibuixar mapa visual
     ax.axis('off')
     plt.tight_layout()
     plt.show()
-    # TODO: REVISAR LA NOMENCLATURA DE LES GATES I MILLORAR QUE NO ES VEGI SOLAPAT
 # --- TEST SECTION ---
 if __name__ == "__main__":
 
