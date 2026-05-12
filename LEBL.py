@@ -242,9 +242,9 @@ def plot_airport_schema(bcn):  # Dibuixar mapa visual
                 else:
                     side = 1  # Dreta
 
-                level = 14.2 - (g_idx // 2) * 0.42
+                level = 14.2 - (g_idx // 2) * 0.40
 
-                if level >= 1:
+                if level >= -10:
                     #CÀLCUL DE GATE_X
                     if side == -1:
                         gate_x = area_x_center + (side * 0.8) - (gate_width / 2) #pels rectangles
@@ -273,7 +273,7 @@ def plot_airport_schema(bcn):  # Dibuixar mapa visual
                         else:
                             ha_value = 'left'
 
-                        ax.text(gate_x + side * 0.1, level - 0.1, gate.aircraft_id, fontsize=7,
+                        ax.text(gate_x + side * 0.1, level + gate_height/2, gate.aircraft_id, fontsize=5,
                                 ha=ha_value, fontweight='bold', color='black')
 
                     # Número de la gate
