@@ -16,6 +16,8 @@ def LoadArrivals(filename):
                     origin_airport = parts[1]
                     arrival_time = parts[2]
                     airline=parts[3]
+                    if len(arrival_time) == 4: #Per si de cas perquè en els departures hi havia algunes hores que no seguien el format HH:MM
+                        arrival_time = "0" + arrival_time
                     if arrival_time[-3]==":":
                         new_aircraft = Aircraft(aircraft_id, airline,origin_airport, arrival_time)
                         arrivals_list.append(new_aircraft)
@@ -24,12 +26,44 @@ def LoadArrivals(filename):
         return []
     return arrivals_list
 
+def LoadDepartures(filename):
+    """Llegeix l'arxiu de sortides i retorna una llista d'Aircraft modificats."""
+    departures_list = []
+    try:
+        with open(filename, 'r') as departures_file:
+            data = departures_file.read()
+            Lines = data.splitlines()
+            i = 1
+            while i < len(Lines):
+                parts = Lines[i].split()
+                if len(parts) >= 4:
+                    aircraft_id = parts[0]
+                    destination = parts[1]
+                    departure_time = parts[2]
+                    airline = parts[3]
+                    # Creem Aircraft buidant les dades d'arribada però posant bé el format de les hores perque no hi hagi problemes
+                    if len(departure_time) == 4:
+                        departure_time = "0" + departure_time
+                    new_aircraft = Aircraft(aircraft_id, airline)
+                    new_aircraft.destination_airport = destination
+                    new_aircraft.departure_time = departure_time
+                    departures_list.append(new_aircraft)
+                i += 1
+        return departures_list, 0
+    except FileNotFoundError:
+        return [], -1
+    except Exception as e:
+        print(f"Error loading departures: {e}")
+        return [], -1
+
 class Aircraft:
-    def __init__(self, aircraft_id, airline, origin_airport,arrival_time):
+    def __init__(self, aircraft_id, airline, origin_airport="", arrival_time=""):
         self.aircraft_id=aircraft_id #string
         self.airline=airline #3 characters with the ICAO code of the airline
         self.origin_airport=origin_airport #4 characters with the ICAO code of the airport the aircraft is coming from
         self.arrival_time=arrival_time #5 characters with format hh:mm
+        self.destination_airport = "" # ICAO de destí
+        self.departure_time = ""     # Format hh:mm
 
 def PlotArrivals (aircrafts):
     if not aircrafts:
