@@ -69,7 +69,7 @@ def LoadDeparturesAuto():
 
 
 def LoadLeblStructureAuto():
-    """Carrega l'arxiu LEBL.txt automàticament al arrancar si existeix. """
+    """Carrega l'arxiu LEBL.txt automàticament al arrancar si existeix."""
     global bcn_airport
     filename = "LEBL.txt"
     if os.path.exists(filename):
