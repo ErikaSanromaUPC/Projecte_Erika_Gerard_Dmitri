@@ -26,6 +26,64 @@ def PrintToLog(title, message):
     text.insert(tk.END, f"\n" + "-" * 45 + "\n")
 
 
+# FUNCIONES AUTOMÀTIQUES
+
+def LoadAirportsAuto():
+    """Carrega l'arxiu Airports.txt automàticament al arrancar si existeix."""
+    global airports
+    filename = "Airports.txt"
+    if os.path.exists(filename):
+        airports = LoadAirports(filename)
+        # Mostramos los aeropuertos en la consola de texto directamente al iniciar
+        ShowAirports()
+        print(f"[INFO] Airports loaded automatically. Total: {len(airports)}")
+    else:
+        print(f"[WARN] Airports.txt not found for auto-load.")
+
+
+def LoadArrivalsAuto():
+    """Carrega l'arxiu Arrivals.txt automàticament al arrancar si existeix."""
+    global arrivals
+    filename = "Arrivals.txt"
+    if os.path.exists(filename):
+        arrivals = LoadArrivals(filename)
+        print(f"[INFO] Arrivals loaded automatically. Total: {len(arrivals)}")
+    else:
+        print(f"[WARN] Arrivals.txt not found for auto-load.")
+
+
+def LoadDeparturesAuto():
+    """Carrega l'arxiu Departures.txt automàticament al arrancar si existeix."""
+    global departures
+    filename = "Departures.txt"
+    if os.path.exists(filename):
+        var_res = LoadDepartures(filename)
+        departures = var_res[0]
+        code = var_res[1]
+        if code == 0:
+            print(f"[INFO] Departures loaded automatically. Total: {len(departures)}")
+        else:
+            print(f"[ERROR] Could not auto-load Departures file correctly.")
+    else:
+        print(f"[WARN] Departures.txt not found for auto-load.")
+
+
+def LoadLeblStructureAuto():
+    """Carrega l'arxiu LEBL.txt automàticament al arrancar si existeix."""
+    global bcn_airport
+    filename = "LEBL.txt"
+    if os.path.exists(filename):
+        bcn_airport = LoadAirportStructure(filename)
+        if bcn_airport != -1:
+            print(f"[INFO] LEBL structure loaded automatically. {len(bcn_airport.terminals)} terminals found.")
+        else:
+            print(f"[ERROR] Could not load LEBL structure automatically.")
+    else:
+        print(f"[WARN] LEBL.txt not found for auto-load.")
+
+
+# FUNCIONS MANUALS (Carregar a mà els files)
+
 def LoadAirportsManual():  # Obre un diàleg per carregar l'arxiu d'airports i actualitza la llista
     filename = filedialog.askopenfilename()
     if filename:
@@ -196,20 +254,6 @@ def CheckLongDistance():  # Mostra al log els vols que requereixen inspecció (>
 
         text.insert(tk.END, "-" * 45 + "\n")
         text.insert(tk.END, "Please route these aircrafts to the inspection zone.")
-
-
-def LoadLeblStructureAuto():
-    """Carrega l'arxiu LEBL.txt automàticament al arrancar si existeix."""
-    global bcn_airport
-    filename = "LEBL.txt"
-    if os.path.exists(filename):
-        bcn_airport = LoadAirportStructure(filename)
-        if bcn_airport != -1:
-            print(f"[INFO] LEBL structure loaded automatically. {len(bcn_airport.terminals)} terminals found.")
-        else:
-            messagebox.showerror("Error", "Could not load LEBL structure automatically.")
-    else:
-        messagebox.showwarning("Warning", "LEBL.txt not found in the current folder. Please load it manually.")
 
 
 def LoadLeblStructureManual():  # Carrega l'arxiu LEBL.txt i genera l'estructura.
@@ -438,7 +482,14 @@ text.pack(side="left", fill="both", expand=True, padx=5, pady=5)
 plot_frame = tk.Frame(display_frame, bg="white", bd=1, relief="sunken")
 plot_frame.pack(side="right", fill="both", expand=True, padx=5, pady=5)
 
+
+# Carrega automaticament al començar els files
+LoadAirportsAuto()
+LoadArrivalsAuto()
+LoadDeparturesAuto()
 LoadLeblStructureAuto()
+# ----------------------------------------------------
+
 
 def OnClosing():
     plt.close('all')
