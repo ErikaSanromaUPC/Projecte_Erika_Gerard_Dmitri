@@ -161,7 +161,24 @@ def check_long_distance(): #Mostra en una nova finestra els vols que requereixen
             t.insert(tk.END, f"ID: {long_dist[i].aircraft_id} from {long_dist[i].origin_airport}\n")
             i += 1
 
-def load_lebl_structure(): # Carrega l'arxiu LEBL.txt i genera l'estructura.
+
+def load_lebl_structure_auto():
+    """Carrega l'arxiu LEBL.txt automàticament al arrancar si existeix."""
+    global bcn_airport
+    filename = "LEBL.txt"  # Nom de l'arxiu per defecte
+
+    # Comprovem si l'arxiu realment existeix a la carpeta per evitar errors
+    if os.path.exists(filename):
+        bcn_airport = LoadAirportStructure(filename)
+        if bcn_airport != -1:
+            print(f"[INFO] LEBL structure loaded automatically. {len(bcn_airport.terminals)} terminals found.")
+        else:
+            messagebox.showerror("Error", "Could not load LEBL structure automatically.")
+    else:
+        messagebox.showwarning("Warning", "LEBL.txt not found in the current folder. Please load it manually.")
+
+
+def load_lebl_structure_manual(): # Carrega l'arxiu LEBL.txt i genera l'estructura.
     filename = filedialog.askopenfilename()
     if filename:
         global bcn_airport
@@ -215,6 +232,9 @@ def run_dynamic_simulation():
         messagebox.showwarning("Warning", "You need to load LEBL Structure, Arrivals and Departures first!")
         return
 
+    #SEGURETAT: Netegem l'aeroport abans de carregar la simulació base
+    ResetAirport(bcn_airport)
+
     global all_movements
     # 1. Mesclem els arrivals i departures
     result_merge = MergeMovements(arrivals, departures)
@@ -264,6 +284,8 @@ def show_hourly_map():
         res_night = NightAircraft(all_movements)
         if res_night[1] == 0:
             AssignNightGates(bcn_airport, res_night[0])
+        # Creem la cua d'espera temporal per la simulació dinàmica
+        gui_waiting_list = []
 
         # 3. Corremos la simulación HORA POR HORA hasta la hora que quiere el usuario
         h = 0
@@ -272,12 +294,14 @@ def show_hourly_map():
                 time_str = f"0{h}:00"
             else:
                 time_str = f"{h}:00"
-            AssignGatesAtTime(bcn_airport, all_movements, time_str)
+            AssignGatesAtTime(bcn_airport, all_movements, time_str,gui_waiting_list)
             h += 1
 
         # 4. Mostramos el esquema final resultante
         plot_airport_schema(bcn_airport)
-
+        #PROVA afegir un missatge per saber si s'han quedat avions fent cua
+        if len(gui_waiting_list) > 0:
+            messagebox.showinfo("Taxiway Status", f"At {hour}:00, there are {len(gui_waiting_list)} aircrafts waiting on the taxiway.")
     tk.Button(prompt, text="Show Map", command=process_hour).pack(pady=10)
 
 def show_full_day_plots():
@@ -348,10 +372,11 @@ text.pack(side="left", fill="both", expand=True)
 frame_gates = tk.LabelFrame(top_frame, text=" LEBL Gate Management ", padx=10, pady=10)
 frame_gates.pack(side="left", fill="both", expand=True, padx=5)
 
-tk.Button(frame_gates, text="1. Load LEBL Structure", command=load_lebl_structure, bg="#d1e7ff").pack(fill="x", pady=2)
+tk.Button(frame_gates, text="1. Load LEBL Structure (Optional)", command=load_lebl_structure_manual, bg="#d1e7ff").pack(fill="x", pady=2)
 tk.Button(frame_gates, text="2. Load Departures File", command=load_departures_file, bg="#d1e7ff").pack(fill="x", pady=2)
 tk.Button(frame_gates, text="3. Merge & Run Simulation Base", command=run_dynamic_simulation, bg="#d4edda").pack(fill="x", pady=2)
 tk.Button(frame_gates, text="4. Plot 24h Occupancy Graphs", command=show_full_day_plots, bg="#fff2cc").pack(fill="x", pady=2)
 tk.Button(frame_gates, text="5. View Map at Custom Hour (Extra)", command=show_hourly_map, bg="#ffeeba").pack(fill="x", pady=2)
 
+load_lebl_structure_auto()
 root.mainloop()

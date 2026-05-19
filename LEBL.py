@@ -420,11 +420,10 @@ def FreeGate(bcn, aircraft_id):
     return -1 #Error Avió no trobat a cap gate
 
 
-def AssignGatesAtTime(bcn, aircrafts, current_time):
+def AssignGatesAtTime(bcn, aircrafts, current_time,waiting_list):
     """Allibera gates d'avions que ja s'han enlairat i assigna noves gates per una franja d'1 hora"""
     # current_time ve en format "01:00", "02:00", ...
     start_hour = int(current_time.split(':')[0])
-    unassigned_count = 0
     # 1. PROCESSAR SORTIDES (Avions que marxen a aquesta hora)
     # Alliberem primer els avions que ja estaven d'abans i s'enlairen ara
     i = 0
@@ -436,6 +435,24 @@ def AssignGatesAtTime(bcn, aircrafts, current_time):
                 FreeGate(bcn, actual_aircraft.aircraft_id)
         i += 1
 
+# 2. INTENTAR APARCAR AVIONS DE LA LLISTA D'ESPERA
+    # Com que s'han alliberat portes, mirem si els que esperaven de abans poden entrar
+    w = 0
+    while w < len(waiting_list):
+        waiting_aircraft = waiting_list[w]
+        gate_name = AssignGate(bcn, waiting_aircraft)
+        if gate_name != -1:
+            # Si troba porta, el treiem de la llista d'espera
+            waiting_list.pop(w)
+            # Gestionem si és una escala súper curta a la mateixa hora
+            if waiting_aircraft.departure_time != "":
+                dep_hour = int(waiting_aircraft.departure_time.split(':')[0])
+                # Si l'hora d'arribada ja ha sortit O JA HA PASSAT llavors l'avió fa el desembarcament/embarcament exprés i se'n va JA
+                if dep_hour <= start_hour:
+                    FreeGate(bcn, waiting_aircraft.aircraft_id)
+            # No incrementem 'w' perquè hem eliminat un element i la llista s'ha mogut
+        else:
+            w += 1
 # 2. PROCESSAR ARRIBADES (Avions que aterren a aquesta hora)
     j = 0
     while j < len(aircrafts):
@@ -446,18 +463,18 @@ def AssignGatesAtTime(bcn, aircrafts, current_time):
                 # El busquem a veure si ja té porta (per si de cas)
                 gate_name = AssignGate(bcn, actual_aircraft)
                 if gate_name == -1:
-                    unassigned_count += 1 # No ha cabut per falta d'espai
+                    # EN LLOC DE PERDRE'S, VA A LA LLISTA D'ESPERA
+                    waiting_list.append(actual_aircraft)
                 else:
-                    # NOU BLOC PER ESCALES CURTES A LA MATEIXA HORA
-                    # Si l'avió també té hora de sortida i coincideix amb AQUESTA MATEIXA HORA,
-                    # és una escala molt curta, l'alliberem directament
-                    # perquè no es quedi "congelat" per la pròxima hora.
+                    # Bloc d'escala curta normal a la mateixa hora
                     if actual_aircraft.departure_time != "":
                         dep_hour = int(actual_aircraft.departure_time.split(':')[0])
                         if dep_hour == start_hour:
                             FreeGate(bcn, actual_aircraft.aircraft_id)
         j += 1
-    return unassigned_count
+
+    #Retornem quants avions s'han quedat encallats esperant a la pista de rodatge en aquesta hora
+    return len(waiting_list)
 
 
 def PlotDayOccupancy(bcn, aircrafts):
@@ -473,7 +490,8 @@ def PlotDayOccupancy(bcn, aircrafts):
     hours_labels = []
     t1_occupancy = []
     t2_occupancy = []
-    rejected_flights = []
+    waiting_flights_log = []
+    waiting_list = []
 
     h = 0
     while h < 24:
@@ -485,9 +503,8 @@ def PlotDayOccupancy(bcn, aircrafts):
 
         hours_labels.append(time_str)
 
-        # Executem l'assignaciño d'aquella hora
-        unassigned = AssignGatesAtTime(bcn, aircrafts, time_str)
-        rejected_flights.append(unassigned)
+        delayed_count = AssignGatesAtTime(bcn, aircrafts, time_str, waiting_list)
+        waiting_flights_log.append(delayed_count)
 
         # Comptem quantes gates té ocupades la T1 i la T2 en aquest moment
         t1_count = 0
@@ -519,23 +536,26 @@ def PlotDayOccupancy(bcn, aircrafts):
 
         t1_occupancy.append(t1_count)
         t2_occupancy.append(t2_count)
+        if h == 8 or h == 14 or h == 20:  # Miramos las horas punta: 8 AM, 2 PM, 8 PM
+            print(f"--- ESTADO A LAS {time_str} ---")
+            print(f"T1 Ocupadas: {t1_count} | T2 Ocupadas: {t2_count}")
+            print(f"Aviones esperando en Taxiway: {delayed_count}")
         h += 1
 
     # --- PINTAR EL PLOT ---
     plt.figure(figsize=(14, 6))
     plt.plot(hours_labels, t1_occupancy, label='T1 Occupied Gates', color='#1a5276', marker='o')
     plt.plot(hours_labels, t2_occupancy, label='T2 Occupied Gates', color='#e67e22', marker='s')
-    plt.bar(hours_labels, rejected_flights, label='Rejected Flights (Full)', color='#e74c3c', alpha=0.6)
+    plt.bar(hours_labels, waiting_flights_log, label='Aircrafts Waiting on Taxiway', color='#e74c3c', alpha=0.6)
 
-    plt.title("LEBL 24-Hour Dynamic Simulation Status", fontsize=14, fontweight='bold')
+    plt.title("LEBL 24-Hour Dynamic Simulation (With Taxiway Holding Queue)", fontsize=14, fontweight='bold')
     plt.xlabel("Hour of the Day")
-    plt.ylabel("Number of Aircrafts / Gates")
+    plt.ylabel("Number of Aircrafts")
     plt.xticks(rotation=45)
     plt.grid(True, linestyle='--', alpha=0.5)
     plt.legend()
     plt.tight_layout()
     plt.show()
-
 
 # --- TEST SECTION ---
 if __name__ == "__main__":
