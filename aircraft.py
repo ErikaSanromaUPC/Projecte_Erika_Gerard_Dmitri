@@ -1,27 +1,38 @@
 import matplotlib.pyplot as plt
 import math
-from airport import (IsSchengenAirport,FindAirport)
+from airport import (IsSchengenAirport, FindAirport)
+import os
 
 def LoadArrivals(filename):
     arrivals_list = []
+    if not os.path.exists(filename):
+        return arrivals_list
     try:
         with open(filename, 'r') as arrivals_file:
             data = arrivals_file.read() #data és per llegir totes les línies del text
             Lines = data.splitlines() #Lines és per separar cada línia del text
-            i=1
-            while i < len(Lines): #TODO: fer que si el format està malament que se salti la línia (En teoria ja està fet perque si les parts no son 4 no fa res passa al seguent)
-                parts=Lines[i].split()
-                if len(parts) == 4:
-                    aircraft_id = parts[0]
-                    origin_airport = parts[1]
-                    arrival_time = parts[2]
-                    airline=parts[3]
-                    if len(arrival_time) == 4: #Per si de cas perquè en els departures hi havia algunes hores que no seguien el format HH:MM
-                        arrival_time = "0" + arrival_time
-                    if arrival_time[-3]==":":
-                        new_aircraft = Aircraft(aircraft_id, airline,origin_airport, arrival_time)
-                        arrivals_list.append(new_aircraft)
-                i+=1
+            i = 1
+            while i < len(Lines):
+                try:
+                    parts = Lines[i].split()
+                    # Si la línia no té exactament 4 parts, s'ignora automàticament
+                    if len(parts) == 4:
+                        aircraft_id = parts[0]
+                        origin_airport = parts[1]
+                        arrival_time = parts[2]
+                        airline = parts[3]
+
+                        if len(arrival_time) == 4: #Per si de cas perquè en els departures hi havia algunes hores que no seguien el format HH:MM
+                            arrival_time = "0" + arrival_time
+
+                        if arrival_time[-3] == ":":
+                            new_aircraft = Aircraft(aircraft_id, airline, origin_airport, arrival_time)
+                            arrivals_list.append(new_aircraft)
+                except Exception:
+                    # Si hi ha qualsevol error intern amb les dades d'aquesta línia, es passa a la següent de forma segura
+                    pass
+
+                i += 1
     except FileNotFoundError:
         return []
     return arrivals_list
@@ -35,26 +46,34 @@ def LoadDepartures(filename):
             Lines = data.splitlines()
             i = 1
             while i < len(Lines):
-                parts = Lines[i].split()
-                if len(parts) >= 4:
-                    aircraft_id = parts[0]
-                    destination = parts[1]
-                    departure_time = parts[2]
-                    airline = parts[3]
-                    # Creem Aircraft buidant les dades d'arribada però posant bé el format de les hores perque no hi hagi problemes
-                    if len(departure_time) == 4:
-                        departure_time = "0" + departure_time
-                    new_aircraft = Aircraft(aircraft_id, airline)
-                    new_aircraft.destination_airport = destination
-                    new_aircraft.departure_time = departure_time
-                    departures_list.append(new_aircraft)
+                try:
+                    parts = Lines[i].split()
+                    # Si la línia no té com a mínim 4 parts, s'ignora automàticament
+                    if len(parts) >= 4:
+                        aircraft_id = parts[0]
+                        destination = parts[1]
+                        departure_time = parts[2]
+                        airline = parts[3]
+
+                        # Creem Aircraft buidant les dades d'arribada però posant bé el format de les hores perquè no hi hagi problemes
+                        if len(departure_time) == 4:
+                            departure_time = "0" + departure_time
+
+                        new_aircraft = Aircraft(aircraft_id, airline)
+                        new_aircraft.destination_airport = destination
+                        new_aircraft.departure_time = departure_time
+                        departures_list.append(new_aircraft)
+                except Exception:
+                    # Si hi ha qualsevol error intern amb les dades d'aquesta línia, es passa a la següent de forma segura
+                    pass
+
                 i += 1
         return departures_list, 0
     except FileNotFoundError:
         return [], -1
-    except Exception as e:
-        print(f"Error loading departures: {e}")
+    except Exception:
         return [], -1
+
 
 class Aircraft:
     def __init__(self, aircraft_id, airline, origin_airport="", arrival_time=""):
@@ -172,7 +191,6 @@ def MapFlights(aircrafts, airports,filename="flights.kml"):
         print("Error: LEBL coordinates not found in the airports list. Cannot plot trajectories.")
         return -1
     with open (filename, "w") as f:
-     #  f.write('<?xml version="1.0" encoding="UTF-8"?>\n')
         f.write('<kml xmlns="http://www.opengis.net/kml/2.2">\n')
         f.write('<Document>\n')
         f.write('<name>Flight Trajectories to LEBL</name>\n')
@@ -220,7 +238,7 @@ def HaversineDistance(lat1, lon1, lat2, lon2):
     distance = R * c
     return distance
 
-def LongDistanceArrivals(aircrafts,airports): #TODO: que es vegi a la pantalla de sota
+def LongDistanceArrivals(aircrafts,airports):
     if not aircrafts:
         print("Error: The aircraft list is empty. No plot to show.")
         return -1
@@ -243,8 +261,8 @@ def LongDistanceArrivals(aircrafts,airports): #TODO: que es vegi a la pantalla d
 # test section
 if __name__ == "__main__":
     import airport
-    aircrafts = LoadArrivals ("Arrivals.txt")
-    airports_list=airport.LoadAirports("airports.txt")
+    aircrafts = LoadArrivals("Arrivals.txt")
+    airports_list = airport.LoadAirports("Airports.txt")
     if not aircrafts:
         print("Error: Couldn't load arrivals or empty file.")
     else:

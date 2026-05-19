@@ -42,7 +42,7 @@ def LoadAirportsAuto():
 
 
 def LoadArrivalsAuto():
-    """Carrega l'arxiu Arrivals.txt automàticament al arrancar si existeix."""
+    """Carrega l'arxiu Arrivals.txt automàticament al començar si existeix."""
     global arrivals
     filename = "Arrivals.txt"
     if os.path.exists(filename):

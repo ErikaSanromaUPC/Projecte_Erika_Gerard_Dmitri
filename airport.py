@@ -1,3 +1,5 @@
+import matplotlib.pyplot as plt
+
 def IsSchengenAirport(code):
     if not code or len(code) < 2:
         return False
@@ -44,19 +46,25 @@ def LoadAirports(filename):
             data = airports_file.read() #data és per llegir totes les línies del text
             Lines = data.splitlines() #Lines és per separar cada línia del text
             i=1
-            while i < len(Lines): #TODO: fer que si el format està malament que se salti la línia (En teoria ja està fet perque si les parts no son 3 no fa res passa al seguent)
-                parts=Lines[i].split()
-                if len(parts) == 3:
-                    code = parts[0]
-                    if parts[1][0] == "N" or parts[1][0] == "S":
-                        # Utilitzem la funció creada per convertir a decimals
-                        lat_decimal = ParseCoordinate(parts[1])
-                        lon_decimal = ParseCoordinate(parts[2])
-                    else:
-                        lat_decimal = float(parts[1])
-                        lon_decimal = float(parts[2])
-                    new_airport = Airport(code, lat_decimal, lon_decimal)
-                    airports_list.append(new_airport)
+            while i < len(Lines):
+                try:
+                    parts=Lines[i].split()
+                    if len(parts) == 3:
+                        code = parts[0]
+                        # Afegim també "E" i "W" perquè les longituds començaven amb aquestes lletres al fitxer real
+                        if parts[1][0] == "N" or parts[1][0] == "S" or parts[1][0] == "E" or parts[1][0] == "W":
+                            # Utilitzem la funció creada per convertir a decimals
+                            lat_decimal = ParseCoordinate(parts[1])
+                            lon_decimal = ParseCoordinate(parts[2])
+                        else:
+                            lat_decimal = float(parts[1])
+                            lon_decimal = float(parts[2])
+                        new_airport = Airport(code, lat_decimal, lon_decimal)
+                        airports_list.append(new_airport)
+                except Exception:
+                    # Si el format d'aquesta línia està malament, no fa res i passa a la següent de forma segura
+                    pass
+
                 i+=1
     except FileNotFoundError:
         return []
@@ -105,9 +113,8 @@ def RemoveAirport(airports, code):
         i += 1
     return -1 #En cas de no trobar-lo retornem -1 que donarà error
 
-import matplotlib.pyplot as plt
 
-def PlotAirports (airports): #TODO: S'ha de posar amb 2 barres stacked              FET!!!
+def PlotAirports (airports):
     schengen=0
     i=0
     while i < len(airports):
@@ -123,7 +130,6 @@ def PlotAirports (airports): #TODO: S'ha de posar amb 2 barres stacked          
 
 def MapAirports(airports, filename="airports.kml"):
     with open (filename, "w") as f:
-     #  f.write('<?xml version="1.0" encoding="UTF-8"?>\n')
         f.write('<kml xmlns="http://www.opengis.net/kml/2.2">\n')
         f.write('<Document>\n')
         i=0
