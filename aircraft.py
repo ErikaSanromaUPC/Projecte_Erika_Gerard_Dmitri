@@ -224,6 +224,59 @@ def MapFlights(aircrafts, airports,filename="flights.kml"):
         f.write("</Document>\n</kml>")
     return filename
 
+
+def MapLongDistanceFlights(aircrafts, airports, filename="flights.kml"):
+    LEBL = FindAirport(airports, "LEBL")
+    # Si LEBL no està al file d'aeroports que marqui error
+    if LEBL == -1:
+        print("Error: LEBL coordinates not found in the airports list. Cannot plot trajectories.")
+        return -1
+
+    # Agafem la llista de vols de llarga distància
+    Long_Flights = LongDistanceArrivals(aircrafts, airports)
+
+    # Si per alguna raó dona error o no hi ha vols parem
+    if Long_Flights == -1 or len(Long_Flights) == 0:
+        print("Error: Long distance flights not found.")
+        return -1
+
+    with open(filename, "w") as f:
+        f.write('<kml xmlns="http://www.opengis.net/kml/2.2">\n')
+        f.write('<Document>\n')
+        f.write('<name>Flight Trajectories to LEBL</name>\n')
+
+        i = 0
+        # Crea l'arxiu kml recorrent els vols de llarga distància
+        while i < len(Long_Flights):
+            airport_origin = FindAirport(airports, Long_Flights[i].origin_airport)
+            if airport_origin != -1:
+                if airport_origin.schengen:
+                    color = "ffffc9e1"
+                else:
+                    color = "ffc9ffcc"
+                f.write(f"""    
+                            <Placemark>
+                                <name>{Long_Flights[i].aircraft_id} ({Long_Flights[i].origin_airport} to LEBL)</name>
+                                <Style>
+                                    <LineStyle>
+                                        <color>{color}</color>
+                                        <width>3</width>
+                                    </LineStyle>
+                                </Style>
+                                <LineString>
+                                    <tessellate>1</tessellate>
+                                    <altitudeMode>clampToGround</altitudeMode>
+                                    <coordinates>
+                                        {airport_origin.longitude},{airport_origin.latitude},0 {LEBL.longitude},{LEBL.latitude},0
+                                    </coordinates>
+                                </LineString>
+                            </Placemark>
+                                """)
+            i += 1
+        f.write("</Document>\n</kml>")
+    return filename
+
+
 def HaversineDistance(lat1, lon1, lat2, lon2):
     R = 6371 # Earth radius
     # Convert degrees to rad

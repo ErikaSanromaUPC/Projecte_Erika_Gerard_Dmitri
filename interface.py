@@ -163,6 +163,26 @@ def MapAirportsManual():
             messagebox.showerror("Error", f"Error opening file: {e}")
 
 
+def MapLongDistanceFlightsManual():  # Genera el KML només amb els vols de llarga distància
+    if not arrivals or not airports:
+        messagebox.showwarning("Warning", "Need both airports and arrivals loaded.")
+        return
+    filename = "long_distance_trajectories.kml"
+    # Crida la funció original de mapes que ja filtra internament utilitzant LongDistanceArrivals
+    res = MapLongDistanceFlights(arrivals, airports, filename)
+    if res != -1:
+        if messagebox.askyesno("Success", f"KML '{filename}' created with long distance flights. Do you want to open it now?"):
+            try:
+                if platform.system() == "Windows":
+                    os.startfile(filename)
+                elif platform.system() == "Darwin":  # macOS
+                    os.system(f"open {filename}")
+                else:  # Linux
+                    os.system(f"xdg-open {filename}")
+            except Exception as e:
+                messagebox.showerror("Error", f"Could not open file: {e}")
+
+
 def ShowAirports():
     text.delete("1.0", tk.END)
     if not airports:
@@ -471,6 +491,7 @@ tk.Button(frame_right, text="Plot Flights per Airline", command=PlotAirlinesManu
 tk.Button(frame_right, text="Plot Schengen Origin Flights", command=PlotTypeManual).pack(fill="x", pady=2)
 tk.Button(frame_right, text="Map Flight Trajectories (KML)", command=MapFlightsManual).pack(fill="x", pady=2)
 tk.Button(frame_right, text="Check Long Distance Flights", command=CheckLongDistance).pack(fill="x", pady=2)
+tk.Button(frame_right, text="Map Long Distance (KML)", command=MapLongDistanceFlightsManual, bg="#e1c9ff").pack(fill="x", pady=2)
 
 # Secció inferior per veure les dades i els GRÀFICS integrats
 display_frame = tk.LabelFrame(root, text=" Data & Visual Console ")
