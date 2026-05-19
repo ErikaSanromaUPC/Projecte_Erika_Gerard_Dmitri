@@ -89,7 +89,6 @@ def PlotArrivals (aircrafts):
     plt.title("Landing frequency during the day")
     plt.xlabel("Hour of the day")
     plt.ylabel("Number of aircrafts")
-    plt.show()
 
 def SaveFlights(aircrafts, filename):
     if not aircrafts:
@@ -147,7 +146,6 @@ def PlotAirlines (aircrafts):
     plt.xlabel("Airline")
     plt.ylabel("Number of flights")
     plt.tight_layout() # els eixos s'ajusten i no es talla res per sota
-    plt.show()
 
 def PlotFlightsType (aircrafts):
     if not aircrafts:
@@ -166,7 +164,6 @@ def PlotFlightsType (aircrafts):
     plt.title("Origin of Aircrafts")
     plt.ylabel("Count of Flights")
     plt.legend()
-    plt.show()
 
 def MapFlights(aircrafts, airports,filename="flights.kml"):
     LEBL = FindAirport(airports, "LEBL")
@@ -258,7 +255,7 @@ if __name__ == "__main__":
         PlotAirlines(aircrafts)
         print("Ploting schengen flights...")
         PlotFlightsType(aircrafts)
-
+        plt.show()
         # 3. Prova generació Mapa KML
         print("Generating trajectories KML file...")
         MapFlights(aircrafts, airports_list, "test_flights.kml")

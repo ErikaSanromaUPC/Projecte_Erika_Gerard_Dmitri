@@ -120,7 +120,6 @@ def PlotAirports (airports): #TODO: S'ha de posar amb 2 barres stacked          
     plt.title("Schengen Airports")
     plt.ylabel("Count")
     plt.legend()
-    plt.show()
 
 def MapAirports(airports, filename="airports.kml"):
     with open (filename, "w") as f:

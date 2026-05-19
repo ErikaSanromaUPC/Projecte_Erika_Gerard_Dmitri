@@ -5,21 +5,36 @@ from aircraft import *
 from LEBL import * # Importa classes BarcelonaAP, Terminal, etc.
 import os
 import platform
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import matplotlib.pyplot as plt
 
 airports = []
 arrivals = []
 departures = []
 all_movements = []
 bcn_airport = None
+current_canvas = None
 
-def load_airports(): #Obre un diàleg per carregar l'arxiu d'airports i actualitza la llista
+
+def PrintToLog(title, message):
+    """Funció auxiliar per escriure missatges de format net al log central."""
+    text.delete("1.0", tk.END)
+    text.insert(tk.END, f"=============================================\n")
+    text.insert(tk.END, f" {title.upper()}\n")
+    text.insert(tk.END, f"=============================================\n\n")
+    text.insert(tk.END, f"{message}\n")
+    text.insert(tk.END, f"\n" + "-" * 45 + "\n")
+
+
+def LoadAirportsManual():  # Obre un diàleg per carregar l'arxiu d'airports i actualitza la llista
     filename = filedialog.askopenfilename()
     if filename:
-        global airports #Això fa que agafi airports principal
+        global airports
         airports = LoadAirports(filename)
-        show_airports()
+        ShowAirports()
 
-def save_schengen(): #Filtra i guarda els aeroports Schengen en un txt
+
+def SaveSchengen():  # Filtra i guarda els aeroports Schengen en un txt
     if not airports:
         messagebox.showwarning("Warning", "No airports loaded to filter.")
         return
@@ -27,11 +42,13 @@ def save_schengen(): #Filtra i guarda els aeroports Schengen en un txt
     if filename:
         res = SaveSchengenAirports(airports, filename)
         if res != -1:
-            messagebox.showinfo("Success", f"{res} Schengen airports have been saved.")
+            PrintToLog("Schengen Filter",
+                       f"Success: {res} Schengen airports have been saved to:\n{os.path.basename(filename)}")
         else:
             messagebox.showwarning("Warning", "No Schengen airports were found in the list.")
 
-def add_airport(): #Recull les dades dels campos d'entrada i afegeix un nou aeroport a la lista
+
+def AddAirportManual():  # Recull les dades dels campos d'entrada i afegeix un nou aeroport a la lista
     try:
         code = code_entry.get().upper().strip()
         lat = float(lat_entry.get())
@@ -40,10 +57,8 @@ def add_airport(): #Recull les dades dels campos d'entrada i afegeix un nou aero
             messagebox.showwarning("Error", "The ICAO code must be 3-4 characters long.")
             return
         a = Airport(code, lat, lon)
-        # AddAirport retorna True si no estava repetit
         if AddAirport(airports, a):
-            show_airports()
-            # Netegem entrades pel següent
+            ShowAirports()
             code_entry.delete(0, tk.END)
             lat_entry.delete(0, tk.END)
             lon_entry.delete(0, tk.END)
@@ -53,21 +68,26 @@ def add_airport(): #Recull les dades dels campos d'entrada i afegeix un nou aero
     except ValueError:
         messagebox.showerror("Data Error", "Please enter valid numbers for Latitude and Longitude.")
 
-def remove_airport(): #Elimina un aeroport de la lista buscant-lo pel seu codi ICAO.
+
+def RemoveAirportManual():  # Elimina un aeroport de la lista buscant-lo pel seu codi ICAO.
     code = code_entry.get().upper().strip()
     if RemoveAirport(airports, code) == 0:
-        show_airports()
+        ShowAirports()
         code_entry.delete(0, tk.END)
     else:
         messagebox.showwarning("Error", f"Airport not found {code}.")
 
-def plot_airports():
+
+def PlotAirportsManual():
     if not airports:
         messagebox.showwarning("Warning", "Empty list.")
         return
+    plt.clf()
     PlotAirports(airports)
+    EmbedPlotInGui()
 
-def map_airports():
+
+def MapAirportsManual():
     if not airports:
         messagebox.showwarning("Warning", "Empty list.")
         return
@@ -84,51 +104,62 @@ def map_airports():
         except Exception as e:
             messagebox.showerror("Error", f"Error opening file: {e}")
 
-def show_airports():
-    text.delete("1.0", tk.END) #Això borra tot, perquè no s'apilin els aeroports carregats
+
+def ShowAirports():
+    text.delete("1.0", tk.END)
     if not airports:
         text.insert(tk.END, "No airports loaded.")
         return
-    i=0
+    i = 0
     while i < len(airports):
         airport = airports[i]
-        # Utilitzem :.4f per posar 4 decimals
-        text.insert(tk.END,f"{airport.code:6} | Lat: {airport.latitude:>8.4f} | Lon: {airport.longitude:>8.4f} | Schengen: {airport.schengen}\n") #Es veu amb moltes coses perquè està posat amb un format bonic
-        i+=1
+        text.insert(tk.END,
+                    f"{airport.code:6} | Lat: {airport.latitude:>8.4f} | Lon: {airport.longitude:>8.4f} | Schengen: {airport.schengen}\n")
+        i += 1
 
-def load_arrivals(): #Càrrega el file d'arrivals (Arrivals.txt)."
+
+def LoadArrivalsFile():  # Càrrega el file d'arrivals (Arrivals.txt)."
     filename = filedialog.askopenfilename(filetypes=[("Text files", "*.txt")])
     if filename:
         global arrivals
         arrivals = LoadArrivals(filename)
-        messagebox.showinfo("Success", f"Loaded {len(arrivals)} flight arrivals.")
+        PrintToLog("Arrivals Loaded", f"Successfully loaded {len(arrivals)} flight arrivals from data file.")
 
-def plot_arrivals():
+
+def PlotArrivalsManual():
     if not arrivals:
         messagebox.showwarning("Warning", "No arrivals loaded.")
         return
+    plt.clf()
     PlotArrivals(arrivals)
+    EmbedPlotInGui()
 
-def plot_airlines():
+
+def PlotAirlinesManual():
     if not arrivals:
         messagebox.showwarning("Warning", "No arrivals loaded.")
         return
+    plt.clf()
     PlotAirlines(arrivals)
+    EmbedPlotInGui()
 
-def plot_type():
+
+def PlotTypeManual():
     if not arrivals:
         messagebox.showwarning("Warning", "No arrivals loaded.")
         return
+    plt.clf()
     PlotFlightsType(arrivals)
+    EmbedPlotInGui()
 
-def map_flights(): #Genera el mapa KML de trajectories cap a LEBL.
+
+def MapFlightsManual():  # Genera el mapa KML de trajectories cap a LEBL.
     if not arrivals or not airports:
         messagebox.showwarning("Warning", "Need both airports and arrivals loaded.")
         return
     filename = "flights_trajectories.kml"
     res = MapFlights(arrivals, airports, "flights_trajectories.kml")
     if res != -1:
-        # Preguntem a l'usuari si el vol obrir ara
         if messagebox.askyesno("Success", f"KML '{filename}' created. Do you want to open it now?"):
             try:
                 if platform.system() == "Windows":
@@ -140,34 +171,37 @@ def map_flights(): #Genera el mapa KML de trajectories cap a LEBL.
             except Exception as e:
                 messagebox.showerror("Error", f"Could not open file: {e}")
 
-def check_long_distance(): #Mostra en una nova finestra els vols que requereixen inspecció (>2000km).
+
+def CheckLongDistance():  # Mostra al log els vols que requereixen inspecció (>2000km).
     if not arrivals or not airports:
         messagebox.showwarning("Warning", "Need both airports and arrivals loaded.")
         return
     long_dist = LongDistanceArrivals(arrivals, airports)
-
-    # Obre una finestra nova per mostrar els resultats
-    top = tk.Toplevel(root)
-    top.title("Special Inspection (>2000km)")
-    t = tk.Text(top, height=15, width=50)
-    t.pack(padx=10, pady=10)
+    text.delete("1.0", tk.END)
 
     if not long_dist or long_dist == -1:
-        t.insert(tk.END, "No aircrafts require special inspection.")
+        PrintToLog("Special Inspection (>2000km)", "No aircrafts require special inspection.")
     else:
-        t.insert(tk.END, f"Found {len(long_dist)} aircrafts:\n" + "-" * 30 + "\n")
+        text.insert(tk.END, "=============================================\n")
+        text.insert(tk.END, "         SPECIAL INSPECTION (>2000km)        \n")
+        text.insert(tk.END, "=============================================\n")
+        text.insert(tk.END, f"Found {len(long_dist)} aircrafts requiring check:\n")
+        text.insert(tk.END, "-" * 45 + "\n")
+
         i = 0
         while i < len(long_dist):
-            t.insert(tk.END, f"ID: {long_dist[i].aircraft_id} from {long_dist[i].origin_airport}\n")
+            ac = long_dist[i]
+            text.insert(tk.END, f"✈ ID: {ac.aircraft_id:8} | Origin: {ac.origin_airport:4} | Airline: {ac.airline}\n")
             i += 1
 
+        text.insert(tk.END, "-" * 45 + "\n")
+        text.insert(tk.END, "Please route these aircrafts to the inspection zone.")
 
-def load_lebl_structure_auto():
+
+def LoadLeblStructureAuto():
     """Carrega l'arxiu LEBL.txt automàticament al arrancar si existeix."""
     global bcn_airport
-    filename = "LEBL.txt"  # Nom de l'arxiu per defecte
-
-    # Comprovem si l'arxiu realment existeix a la carpeta per evitar errors
+    filename = "LEBL.txt"
     if os.path.exists(filename):
         bcn_airport = LoadAirportStructure(filename)
         if bcn_airport != -1:
@@ -178,18 +212,19 @@ def load_lebl_structure_auto():
         messagebox.showwarning("Warning", "LEBL.txt not found in the current folder. Please load it manually.")
 
 
-def load_lebl_structure_manual(): # Carrega l'arxiu LEBL.txt i genera l'estructura.
+def LoadLeblStructureManual():  # Carrega l'arxiu LEBL.txt i genera l'estructura.
     filename = filedialog.askopenfilename()
     if filename:
         global bcn_airport
         bcn_airport = LoadAirportStructure(filename)
         if bcn_airport != -1:
-            messagebox.showinfo("Success", f"LEBL structure loaded. {len(bcn_airport.terminals)} terminals found.")
+            PrintToLog("LEBL Structure",
+                       f"Airport structure loaded successfully.\nFound {len(bcn_airport.terminals)} active terminals ready for simulation.")
         else:
             messagebox.showerror("Error", "Could not load LEBL structure.")
 
 
-def assign_gates_to_arrivals(): #Assigna gates a tots els vols carregats.
+def AssignGatesToArrivals():  # Assigna gates a tots els vols carregats.
     if not bcn_airport or not arrivals:
         messagebox.showwarning("Warning", "Load LEBL structure and Arrivals first!")
         return
@@ -201,47 +236,44 @@ def assign_gates_to_arrivals(): #Assigna gates a tots els vols carregats.
         if gate_name != -1:
             assigned_count += 1
         i += 1
-    messagebox.showinfo("Assignment Complete", f"Assigned {assigned_count}/{len(arrivals)} aircrafts to gates.")
+    PrintToLog("Gate Assignment",
+                 f"Assignment process complete.\nSuccessfully routed {assigned_count}/{len(arrivals)} aircrafts to available gates.")
 
 
-def plot_gate_occupancy():
+def PlotGateOccupancy():
     if not bcn_airport:
         messagebox.showwarning("Warning", "LEBL structure not loaded.")
         return
-
-    # Llamamos directamente a la función que dibuja el mapa tipo esquema
-    # que pusimos en LEBL.py
+    plt.clf()
     plot_airport_schema(bcn_airport)
+    EmbedPlotInGui()
 
 
-def load_departures_file():
+def LoadDeparturesFile():
     """Carrèga l'arxiu de sortides."""
     filename = filedialog.askopenfilename(filetypes=[("Text files", "*.txt")])
     if filename:
         global departures
         departures, code = LoadDepartures(filename)
         if code == 0:
-            messagebox.showinfo("Success", f"Loaded {len(departures)} flight departures.")
+            PrintToLog("Departures Loaded", f"Successfully loaded {len(departures)} schedule flight departures.")
         else:
             messagebox.showerror("Error", "Could not load departures file.")
 
 
-def run_dynamic_simulation():
+def RunDynamicSimulation():
     """Executa la fusió i prepara els moviments del dia."""
     if not bcn_airport or not arrivals or not departures:
         messagebox.showwarning("Warning", "You need to load LEBL Structure, Arrivals and Departures first!")
         return
 
-    #SEGURETAT: Netegem l'aeroport abans de carregar la simulació base
     ResetAirport(bcn_airport)
 
     global all_movements
-    # 1. Mesclem els arrivals i departures
     result_merge = MergeMovements(arrivals, departures)
-    all_movements = result_merge[0] # La lista de vols
-    code = result_merge[1]          # El codi d'error
+    all_movements = result_merge[0]
+    code = result_merge[1]
 
-    # 2. Busquem i assignem les portes dels avions nocturns
     if code == 0:
         result_night = NightAircraft(all_movements)
         night_list = result_night[0]
@@ -249,74 +281,93 @@ def run_dynamic_simulation():
         if night_code == 0:
             night_assigned = AssignNightGates(bcn_airport, night_list)
 
-            messagebox.showinfo("Simulation Ready",
-                                f"Merged total movements: {len(all_movements)} flights.\n"
-                                f"Night aircraft parked at start of day: {night_assigned}")
+            log_msg = f"Merged total operations: {len(all_movements)} daily flights.\n" \
+                      f"Night aircrafts parked at gates at 00:00: {night_assigned}\n\n" \
+                      f"Ready to check hourly airport maps or continuous plots."
+            PrintToLog("Simulation Base Ready", log_msg)
         else:
             messagebox.showerror("Error", "Could not process night aircrafts.")
     else:
         messagebox.showerror("Error", "Could not merge movements.")
 
 
-def show_hourly_map():
-    """Demana una hora específica a l'usuari, simulal'estat i dibuixa el mapa d'aquella hora."""
+def ShowHourlyMap():
+    """Llegeix l'hora de la interfície principal, simula l'estat i dibuixa el mapa."""
     if not all_movements:
         messagebox.showwarning("Warning", "Run the Dynamic Simulation fusion first!")
         return
 
-    # Crea una petita finestra de diàleg manual per demanar la hora
-    prompt = tk.Toplevel(root)
-    prompt.title("Select Hour")
-    prompt.geometry("250x120")
+    try:
+        hour_str = hour_entry.get().strip()
+        hour = int(hour_str)
+        if hour < 0 or hour > 23:
+            messagebox.showerror("Error", "Please enter an hour between 0 and 23.")
+            return
+    except ValueError:
+        messagebox.showerror("Error", "Please enter a valid number (00-23) in the hour slot.")
+        return
 
-    tk.Label(prompt, text="Enter hour to check (00 to 23):").pack(pady=5)
-    hour_entry = tk.Entry(prompt, width=10)
-    hour_entry.pack()
-    hour_entry.insert(0, "12") # Hora per defecte: migdia
+    ResetAirport(bcn_airport)
 
-    def process_hour():
-        hour = int(hour_entry.get().strip())
-        prompt.destroy() #Tanca mini-finestra emergent quan l'usuari fa click al botó "Show Map"
-        #Netegem totes les gates de LEBL per simular des de 0
-        ResetAirport(bcn_airport)
+    res_night = NightAircraft(all_movements)
+    if res_night[1] == 0:
+        AssignNightGates(bcn_airport, res_night[0])
 
-        # 2. Volvemos a poner los aviones de la noche
-        res_night = NightAircraft(all_movements)
-        if res_night[1] == 0:
-            AssignNightGates(bcn_airport, res_night[0])
-        # Creem la cua d'espera temporal per la simulació dinàmica
-        gui_waiting_list = []
+    gui_waiting_list = []
 
-        # 3. Corremos la simulación HORA POR HORA hasta la hora que quiere el usuario
-        h = 0
-        while h <= hour:
-            if h<10:
-                time_str = f"0{h}:00"
-            else:
-                time_str = f"{h}:00"
-            AssignGatesAtTime(bcn_airport, all_movements, time_str,gui_waiting_list)
-            h += 1
+    h = 0
+    while h <= hour:
+        if h < 10:
+            time_str = f"0{h}:00"
+        else:
+            time_str = f"{h}:00"
+        AssignGatesAtTime(bcn_airport, all_movements, time_str, gui_waiting_list)
+        h += 1
 
-        # 4. Mostramos el esquema final resultante
-        plot_airport_schema(bcn_airport)
-        #PROVA afegir un missatge per saber si s'han quedat avions fent cua
-        if len(gui_waiting_list) > 0:
-            messagebox.showinfo("Taxiway Status", f"At {hour}:00, there are {len(gui_waiting_list)} aircrafts waiting on the taxiway.")
-    tk.Button(prompt, text="Show Map", command=process_hour).pack(pady=10)
+    plt.clf()
+    plot_airport_schema(bcn_airport)
+    EmbedPlotInGui()
 
-def show_full_day_plots():
+    status_msg = f"Airport map updated for timestamp: {hour:02d}:00.\n"
+    if len(gui_waiting_list) > 0:
+        status_msg += f"TAXIWAY WARNING: There are {len(gui_waiting_list)} aircrafts holding on taxiways due to full gates."
+    else:
+        status_msg += "TAXIWAY CLEAR: Ground traffic is moving fluently. No delays reported."
+
+    PrintToLog(f"Status at {hour:02d}:00", status_msg)
+
+
+def EmbedPlotInGui():
+    """Captura la figura actual de matplotlib i la incrusta al plot_frame de la GUI."""
+    global current_canvas
+
+    if current_canvas is not None:
+        current_canvas.get_tk_widget().destroy()
+
+    fig = plt.gcf()
+    current_canvas = FigureCanvasTkAgg(fig, master=plot_frame)
+    current_canvas.draw()
+    current_canvas.get_tk_widget().pack(fill="both", expand=True)
+    plot_frame.update_idletasks()
+
+
+def ShowFullDayPlots():
     """Executa i imprimeix la gràfica lineal de les 24h."""
     if not all_movements:
         messagebox.showwarning("Warning", "Run the Dynamic Simulation fusion first!")
         return
+    plt.clf()
     PlotDayOccupancy(bcn_airport, all_movements)
+    EmbedPlotInGui()
+    PrintToLog("Occupancy Plot", "24-Hour continuous gate occupancy analysis graph generated on the right panel.")
 
+
+plt.ioff()
 
 root = tk.Tk()
 root.title("Airport Manager v2 (Erika, Gerard, Dmitri)")
-root.geometry("850x650")
+root.geometry("950x650")
 
-# Contenedor pels botons superiors (dividit en 2 columnes)
 top_frame = tk.Frame(root)
 top_frame.pack(side="top", fill="x", padx=10, pady=5)
 
@@ -324,12 +375,11 @@ top_frame.pack(side="top", fill="x", padx=10, pady=5)
 frame_left = tk.LabelFrame(top_frame, text=" Airport Management ", padx=10, pady=10)
 frame_left.pack(side="left", fill="both", expand=True, padx=5)
 
-tk.Button(frame_left, text="Load Airports", command=load_airports).pack(fill="x", pady=2)
-tk.Button(frame_left, text="Save Schengen List", command=save_schengen).pack(fill="x", pady=2)
-tk.Button(frame_left, text="Plot Schengen Distribution", command=plot_airports).pack(fill="x", pady=2)
-tk.Button(frame_left,text="Generate Airport Map (KML)", command=map_airports).pack(fill="x", pady=2)
+tk.Button(frame_left, text="Load Airports", command=LoadAirportsManual).pack(fill="x", pady=2)
+tk.Button(frame_left, text="Save Schengen List", command=SaveSchengen).pack(fill="x", pady=2)
+tk.Button(frame_left, text="Plot Schengen Distribution", command=PlotAirportsManual).pack(fill="x", pady=2)
+tk.Button(frame_left, text="Generate Airport Map (KML)", command=MapAirportsManual).pack(fill="x", pady=2)
 
-# Sub secció per afegir/treure aeroports
 entry_frame = tk.Frame(frame_left)
 entry_frame.pack(pady=5)
 
@@ -345,38 +395,56 @@ tk.Label(entry_frame, text="Lon:").grid(row=2, column=0)
 lon_entry = tk.Entry(entry_frame, width=10)
 lon_entry.grid(row=2, column=1)
 
-# Botons per afegir i eliminar aeroports
-tk.Button(frame_left, text="Add New Airport", command=add_airport).pack(fill="x")
-tk.Button(frame_left, text="Remove by Code", command=remove_airport).pack(fill="x", pady=2)
+tk.Button(frame_left, text="Add New Airport", command=AddAirportManual).pack(fill="x")
+tk.Button(frame_left, text="Remove by Code", command=RemoveAirportManual).pack(fill="x", pady=2)
+
+# Frame per LEBL Gate Management (Centre)
+frame_gates = tk.LabelFrame(top_frame, text=" LEBL Gate Management ", padx=10, pady=10)
+frame_gates.pack(side="left", fill="both", expand=True, padx=5)
+
+tk.Button(frame_gates, text="1. Load LEBL Structure (Optional)", command=LoadLeblStructureManual, bg="#d1e7ff").pack(fill="x", pady=2)
+tk.Button(frame_gates, text="2. Load Departures File", command=LoadDeparturesFile, bg="#d1e7ff").pack(fill="x", pady=2)
+tk.Button(frame_gates, text="3. Merge & Run Simulation Base", command=RunDynamicSimulation, bg="#d4edda").pack(fill="x", pady=2)
+tk.Button(frame_gates, text="4. Plot 24h Occupancy Graphs", command=ShowFullDayPlots, bg="#fff2cc").pack(fill="x", pady=2)
+
+hour_select_frame = tk.Frame(frame_gates)
+hour_select_frame.pack(fill="x", pady=5)
+
+tk.Label(hour_select_frame, text="Target Hour (00-23):", font=("Arial", 9, "bold")).pack(side="left", padx=2)
+hour_entry = tk.Entry(hour_select_frame, width=5, justify="center")
+hour_entry.pack(side="left", padx=5)
+hour_entry.insert(0, "12")
+
+tk.Button(frame_gates, text="5. View Map at Custom Hour", command=ShowHourlyMap, bg="#ffeeba").pack(fill="x", pady=2)
 
 # Frame per flights (Dreta)
 frame_right = tk.LabelFrame(top_frame, text=" Flight & Arrival Tools ", padx=10, pady=10)
 frame_right.pack(side="right", fill="both", expand=True, padx=5)
 
-tk.Button(frame_right, text="Load Arrivals File", command=load_arrivals).pack(fill="x", pady=2)
-tk.Button(frame_right, text="Plot Arrival Frequency", command=plot_arrivals).pack(fill="x", pady=2)
-tk.Button(frame_right, text="Plot Flights per Airline", command=plot_airlines).pack(fill="x", pady=2)
-tk.Button(frame_right, text="Plot Schengen Origin Flights", command=plot_type).pack(fill="x", pady=2)
-tk.Button(frame_right, text="Map Flight Trajectories (KML)", command=map_flights).pack(fill="x", pady=2)
-tk.Button(frame_right, text="Check Long Distance Flights", command=check_long_distance).pack(fill="x", pady=2)
+tk.Button(frame_right, text="Load Arrivals File", command=LoadArrivalsFile).pack(fill="x", pady=2)
+tk.Button(frame_right, text="Plot Arrival Frequency", command=PlotArrivalsManual).pack(fill="x", pady=2)
+tk.Button(frame_right, text="Plot Flights per Airline", command=PlotAirlinesManual).pack(fill="x", pady=2)
+tk.Button(frame_right, text="Plot Schengen Origin Flights", command=PlotTypeManual).pack(fill="x", pady=2)
+tk.Button(frame_right, text="Map Flight Trajectories (KML)", command=MapFlightsManual).pack(fill="x", pady=2)
+tk.Button(frame_right, text="Check Long Distance Flights", command=CheckLongDistance).pack(fill="x", pady=2)
 
-# Secció inferior per veure les dades
-display_frame = tk.LabelFrame(root, text=" Data Console ")
+# Secció inferior per veure les dades i els GRÀFICS integrats
+display_frame = tk.LabelFrame(root, text=" Data & Visual Console ")
 display_frame.pack(side="bottom", fill="both", expand=True, padx=15, pady=10)
 
-# Àrea de text central perquè quedi més bonic
-text = tk.Text(display_frame, height=15,  font=("Courier", 10))
-text.pack(side="left", fill="both", expand=True)
+text = tk.Text(display_frame, height=15, width=45, font=("Courier", 10))
+text.pack(side="left", fill="both", expand=True, padx=5, pady=5)
 
-# Frame per LEBL Gate Management (Centre o Dreta)
-frame_gates = tk.LabelFrame(top_frame, text=" LEBL Gate Management ", padx=10, pady=10)
-frame_gates.pack(side="left", fill="both", expand=True, padx=5)
+plot_frame = tk.Frame(display_frame, bg="white", bd=1, relief="sunken")
+plot_frame.pack(side="right", fill="both", expand=True, padx=5, pady=5)
 
-tk.Button(frame_gates, text="1. Load LEBL Structure (Optional)", command=load_lebl_structure_manual, bg="#d1e7ff").pack(fill="x", pady=2)
-tk.Button(frame_gates, text="2. Load Departures File", command=load_departures_file, bg="#d1e7ff").pack(fill="x", pady=2)
-tk.Button(frame_gates, text="3. Merge & Run Simulation Base", command=run_dynamic_simulation, bg="#d4edda").pack(fill="x", pady=2)
-tk.Button(frame_gates, text="4. Plot 24h Occupancy Graphs", command=show_full_day_plots, bg="#fff2cc").pack(fill="x", pady=2)
-tk.Button(frame_gates, text="5. View Map at Custom Hour (Extra)", command=show_hourly_map, bg="#ffeeba").pack(fill="x", pady=2)
+LoadLeblStructureAuto()
 
-load_lebl_structure_auto()
+def OnClosing():
+    plt.close('all')
+    root.quit()
+    root.destroy()
+
+root.protocol("WM_DELETE_WINDOW", OnClosing)
+
 root.mainloop()

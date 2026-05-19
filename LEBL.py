@@ -297,7 +297,6 @@ def plot_airport_schema(bcn):  # Dibuixar mapa visual
     ax.set_ylim(0, 17)
     ax.axis('off')
     plt.tight_layout()
-    plt.show()
 
 
 def MergeMovements(arrivals, departures):
@@ -543,7 +542,8 @@ def PlotDayOccupancy(bcn, aircrafts):
         h += 1
 
     # --- PINTAR EL PLOT ---
-    plt.figure(figsize=(14, 6))
+    fig = plt.gcf()
+    fig.set_size_inches(14, 6)
     plt.plot(hours_labels, t1_occupancy, label='T1 Occupied Gates', color='#1a5276', marker='o')
     plt.plot(hours_labels, t2_occupancy, label='T2 Occupied Gates', color='#e67e22', marker='s')
     plt.bar(hours_labels, waiting_flights_log, label='Aircrafts Waiting on Taxiway', color='#e74c3c', alpha=0.6)
@@ -555,7 +555,6 @@ def PlotDayOccupancy(bcn, aircrafts):
     plt.grid(True, linestyle='--', alpha=0.5)
     plt.legend()
     plt.tight_layout()
-    plt.show()
 
 # --- TEST SECTION ---
 if __name__ == "__main__":
