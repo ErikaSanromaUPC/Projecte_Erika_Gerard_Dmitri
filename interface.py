@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import filedialog, messagebox
 from airport import *
 from aircraft import *
-from LEBL import * # Importa tus clases BarcelonaAP, Terminal, etc.
+from LEBL import * # Importa classes BarcelonaAP, Terminal, etc.
 import os
 import platform
 
@@ -255,13 +255,27 @@ def show_hourly_map():
     hour_entry.insert(0, "12") # Hora per defecte: migdia
 
     def process_hour():
-        hour = hour_entry.get().strip()
-        if len(hour) == 1:
-            hour = f"0{hour}"
-        time_str = f"{hour}:00"
+        hour = int(hour_entry.get().strip())
         prompt.destroy() #Tanca mini-finestra emergent quan l'usuari fa click al botó "Show Map"
+        #Netegem totes les gates de LEBL per simular des de 0
+        ResetAirport(bcn_airport)
 
-        AssignGatesAtTime(bcn_airport, all_movements, time_str)
+        # 2. Volvemos a poner los aviones de la noche
+        res_night = NightAircraft(all_movements)
+        if res_night[1] == 0:
+            AssignNightGates(bcn_airport, res_night[0])
+
+        # 3. Corremos la simulación HORA POR HORA hasta la hora que quiere el usuario
+        h = 0
+        while h <= hour:
+            if h<10:
+                time_str = f"0{h}:00"
+            else:
+                time_str = f"{h}:00"
+            AssignGatesAtTime(bcn_airport, all_movements, time_str)
+            h += 1
+
+        # 4. Mostramos el esquema final resultante
         plot_airport_schema(bcn_airport)
 
     tk.Button(prompt, text="Show Map", command=process_hour).pack(pady=10)

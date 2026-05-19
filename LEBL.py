@@ -345,6 +345,27 @@ def MergeMovements(arrivals, departures):
     return merged_list, 0
 
 
+def ResetAirport(bcn):
+    """Posa totes les gates de l'aeroport en estat lliure i buides, serveix per les funcions dels assign gates amb els departures i arrivals"""
+    if not bcn:
+        return
+
+    t = 0
+    while t < len(bcn.terminals):
+        terminal = bcn.terminals[t]
+        a = 0
+        while a < len(terminal.boarding_areas): #Recorrem cada boarding area per trobar cada gate
+            area = terminal.boarding_areas[a]
+            g = 0
+            while g < len(area.gates): #Esborrem cada gate
+                area.gates[g].occupied = False
+                area.gates[g].aircraft_id = ""
+                g += 1
+            a += 1
+        t += 1
+
+
+
 def NightAircraft(aircrafts):
     """Retorna avions que NOMÉS tenen dades de sortida (han passat la nit a l'aeroport)."""
     if len(aircrafts) == 0:
@@ -403,8 +424,9 @@ def AssignGatesAtTime(bcn, aircrafts, current_time):
     """Allibera gates d'avions que ja s'han enlairat i assigna noves gates per una franja d'1 hora"""
     # current_time ve en format "01:00", "02:00", ...
     start_hour = int(current_time.split(':')[0])
-
-    # 1. ALLIBERAR GATES: Buscar quins avions programats s'enlairen a aquesta hora
+    unassigned_count = 0
+    # 1. PROCESSAR SORTIDES (Avions que marxen a aquesta hora)
+    # Alliberem primer els avions que ja estaven d'abans i s'enlairen ara
     i = 0
     while i < len(aircrafts):
         actual_aircraft = aircrafts[i]
@@ -414,31 +436,44 @@ def AssignGatesAtTime(bcn, aircrafts, current_time):
                 FreeGate(bcn, actual_aircraft.aircraft_id)
         i += 1
 
-    # 2. ASSIGNAR GATES: Buscar quins avions aterren en aquesta franja d' 1 hora
-    unassigned_count = 0
+# 2. PROCESSAR ARRIBADES (Avions que aterren a aquesta hora)
     j = 0
     while j < len(aircrafts):
         actual_aircraft = aircrafts[j]
         if actual_aircraft.arrival_time != "":
             arrival_hour = int(actual_aircraft.arrival_time.split(':')[0])
             if arrival_hour == start_hour:
+                # El busquem a veure si ja té porta (per si de cas)
                 gate_name = AssignGate(bcn, actual_aircraft)
                 if gate_name == -1:
-                    unassigned_count += 1 # No cap per falta d'espai
+                    unassigned_count += 1 # No ha cabut per falta d'espai
+                else:
+                    # NOU BLOC PER ESCALES CURTES A LA MATEIXA HORA
+                    # Si l'avió també té hora de sortida i coincideix amb AQUESTA MATEIXA HORA,
+                    # és una escala molt curta, l'alliberem directament
+                    # perquè no es quedi "congelat" per la pròxima hora.
+                    if actual_aircraft.departure_time != "":
+                        dep_hour = int(actual_aircraft.departure_time.split(':')[0])
+                        if dep_hour == start_hour:
+                            FreeGate(bcn, actual_aircraft.aircraft_id)
         j += 1
     return unassigned_count
 
 
 def PlotDayOccupancy(bcn, aircrafts):
     """Pinta l'ocupació horaria i les falles d'assignació al llarg del dia."""
+    # Primer netegem
+    ResetAirport(bcn)
+    # Tornem a assignar els avions nocturns perquè comencin el dia aparcats
+    result_night = NightAircraft(aircrafts)
+    if result_night[1] == 0:
+        AssignNightGates(bcn, result_night[0])
+
     # Inicialitzem llistes de 24 posiciones per guardar dades de cada hora
     hours_labels = []
     t1_occupancy = []
     t2_occupancy = []
     rejected_flights = []
-
-    # IMPORTANT: Per simular el día net, carreguem de nou els de la nit primer
-    # (Assumint que el bcn que entra està net d'arrivals)
 
     h = 0
     while h < 24:
