@@ -166,7 +166,7 @@ def SearchTerminal(bcn, airline_code):
 
     return ""
 
-def AssignGate(bcn, aircraft): #Busca la primera porta lliure segons terminal i tipus de vol.
+def AssignGate(bcn, aircraft): # Busca la primera porta lliure segons terminal i tipus de vol.
     from airport import IsSchengenAirport  # Import local per evitar líos
     # 1. Trobar terminal per l'aerolínia
     t_name = SearchTerminal(bcn, aircraft.airline)
