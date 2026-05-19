@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import math
 from airport import (IsSchengenAirport,FindAirport)
 
@@ -51,11 +52,12 @@ def PlotArrivals (aircrafts):
     while j < 24:
         Vxh[j]=Vxh[j]+j
         j+=1
-    plt.bar(Vxh, Vyh, color="orange", edgecolor="black")
-    plt.title("Landing frequency during the day")
-    plt.xlabel("Hour of the day")
-    plt.ylabel("Number of aircrafts")
-    plt.show()
+    fig, ax = plt.subplots()  # Crea la figura i els eixos
+    ax.bar(Vxh, Vyh, color="orange", edgecolor="black")  # Dibuixa el gràfic de barres
+    ax.set_title("Landing frequency during the day")
+    ax.set_xlabel("Hour of the day")
+    ax.set_ylabel("Number of aircrafts")
+    return fig
 
 def SaveFlights(aircrafts, filename):
     if not aircrafts:
@@ -106,14 +108,14 @@ def PlotAirlines (aircrafts):
             AirlinesFound.append(airline1)
             count.append(1)
         i+=1
-    plt.figure(figsize=(15, 7))  # Prova per veure bé el gràfic: fa la finiestra més ampla
-    plt.bar(AirlinesFound, count, color="#ffc9e1", edgecolor="black")
-    plt.xticks(rotation=90, fontsize=9)  # Gira els noms en vertical perquè si no se solapen
-    plt.title("Number of flights per airline")
-    plt.xlabel("Airline")
-    plt.ylabel("Number of flights")
-    plt.tight_layout() # els eixos s'ajusten i no es talla res per sota
-    plt.show()
+    fig, ax = plt.subplots(figsize=(15, 7))  # Figura ampla per veure bé els noms
+    ax.bar(AirlinesFound, count, color="#ffc9e1", edgecolor="black")  # Barres per aerolínia
+    plt.xticks(rotation=90, fontsize=9)  # Noms en vertical per no solapar-se
+    ax.set_title("Number of flights per airline")
+    ax.set_xlabel("Airline")
+    ax.set_ylabel("Number of flights")
+    fig.tight_layout()  # Ajusta els marges per no tallar res
+    return fig  # Retorna la figura per mostrar-la a la interfície
 
 def PlotFlightsType (aircrafts):
     if not aircrafts:
@@ -127,12 +129,13 @@ def PlotFlightsType (aircrafts):
             schengen+=1
         i+=1
     non_schengen=len(aircrafts)-schengen
-    plt.bar("Flights", [schengen], color="#e1c9ff", label="Schengen")
-    plt.bar("Flights", [non_schengen], bottom=[schengen], color="#ccffc9", label="No Schengen")
-    plt.title("Origin of Aircrafts")
-    plt.ylabel("Count of Flights")
-    plt.legend()
-    plt.show()
+    fig, ax = plt.subplots()  # Crea la figura i els eixos
+    ax.bar("Flights", [schengen], color="#e1c9ff", label="Schengen")  # Barra Schengen
+    ax.bar("Flights", [non_schengen], bottom=[schengen], color="#ccffc9",label="No Schengen")  # Barra No Schengen
+    ax.set_title("Origin of Aircrafts")
+    ax.set_ylabel("Count of Flights")
+    ax.legend()  # Mostra la llegenda
+    return fig  # Retorna la figura per mostrar-la a la interfície
 
 def MapFlights(aircrafts, airports,filename="flights.kml"):
     LEBL = FindAirport(airports, "LEBL")

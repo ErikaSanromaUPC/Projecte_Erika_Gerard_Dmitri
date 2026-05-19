@@ -1,6 +1,8 @@
 import os
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+
 class Gate:
     def __init__(self, name):
         self.name = name
@@ -295,7 +297,7 @@ def plot_airport_schema(bcn):  # Dibuixar mapa visual
     ax.set_ylim(0, 17)
     ax.axis('off')
     plt.tight_layout()
-    plt.show()
+    return fig
 # --- TEST SECTION ---
 if __name__ == "__main__":
 

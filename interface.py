@@ -5,10 +5,13 @@ from aircraft import *
 from LEBL import * # Importa tus clases BarcelonaAP, Terminal, etc.
 import os
 import platform
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+
 
 airports = []
 arrivals = []
 bcn_airport = None
+canvas_picture=None #VAriable per a la creació dels plots dins la interface
 
 def load_airports(): #Obre un diàleg per carregar l'arxiu d'airports i actualitza la llista
     filename = filedialog.askopenfilename()
@@ -60,10 +63,18 @@ def remove_airport(): #Elimina un aeroport de la lista buscant-lo pel seu codi I
         messagebox.showwarning("Error", f"Airport not found {code}.")
 
 def plot_airports():
+    global canvas_picture
     if not airports:
         messagebox.showwarning("Warning", "Empty list.")
         return
-    PlotAirports(airports)
+    fig = PlotAirports(airports)  # Obté la figura del plot
+    canvas = FigureCanvasTkAgg(fig, master=picture_frame)  # Crea el canvas dins el picture_frame
+    canvas.draw()  # Dibuixa la figura
+    if canvas_picture is not None:
+        canvas_picture.grid_forget()  # Elimina el plot anterior si n'hi havia
+    canvas_picture = canvas.get_tk_widget()  # Obté el widget de tkinter
+    canvas_picture.config(width=600, height=400)  # Configura la mida del widget
+    canvas_picture.grid(row=0, column=0, padx=5, pady=5, sticky="nsew")  # Col·loca el widget a la interfície
 
 def map_airports():
     if not airports:
@@ -102,22 +113,48 @@ def load_arrivals(): #Càrrega el file d'arrivals (Arrivals.txt)."
         messagebox.showinfo("Success", f"Loaded {len(arrivals)} flight arrivals.")
 
 def plot_arrivals():
+    global canvas_picture
     if not arrivals:
         messagebox.showwarning("Warning", "No arrivals loaded.")
         return
-    PlotArrivals(arrivals)
+    fig = PlotArrivals(arrivals)  # Obté la figura del plot
+    canvas = FigureCanvasTkAgg(fig, master=picture_frame)  # Crea el canvas dins el picture_frame
+    canvas.draw() # Dibuixa la figura
+    if canvas_picture is not None:
+        canvas_picture.grid_forget() # Elimina el plot anterior si n'hi havia
+    canvas_picture = canvas.get_tk_widget()    # Obté el widget de tkinter
+    canvas_picture.config(width=600, height=400) # Configura la mida del widget
+    canvas_picture.grid(row=0, column=0, padx=5, pady=5, sticky="nsew")  # Col·loca el widget a la interfície
 
 def plot_airlines():
+    global canvas_picture
     if not arrivals:
         messagebox.showwarning("Warning", "No arrivals loaded.")
         return
-    PlotAirlines(arrivals)
+    fig = PlotAirlines(arrivals) # Obté la figura del plot
+    canvas = FigureCanvasTkAgg(fig, master=picture_frame)  # Crea el canvas dins el picture_frame
+    canvas.draw()   # Dibuixa la figura
+    if canvas_picture is not None:
+        canvas_picture.grid_forget()  # Elimina el plot anterior si n'hi havia
+    canvas_picture = canvas.get_tk_widget()    # Obté el widget de tkinter
+    canvas_picture.config(width=600, height=400)   # Configura la mida del widget
+    canvas_picture.grid(row=0, column=0, padx=5, pady=5, sticky="nsew")  # Col·loca el widget a la interfície
+
 
 def plot_type():
+    global canvas_picture
     if not arrivals:
         messagebox.showwarning("Warning", "No arrivals loaded.")
         return
-    PlotFlightsType(arrivals)
+    fig = PlotFlightsType(arrivals)  # Obté la figura del plot
+    canvas = FigureCanvasTkAgg(fig, master=picture_frame)  # Crea el canvas dins el picture_frame
+    canvas.draw()  # Dibuixa la figura
+    if canvas_picture is not None:
+        canvas_picture.grid_forget()  # Elimina el plot anterior si n'hi havia
+    canvas_picture = canvas.get_tk_widget()  # Obté el widget de tkinter
+    canvas_picture.config(width=600, height=400)  # Configura la mida del widget
+    canvas_picture.grid(row=0, column=0, padx=5, pady=5, sticky="nsew")  # Col·loca el widget a la interfície
+
 
 def map_flights(): #Genera el mapa KML de trajectories cap a LEBL.
     if not arrivals or not airports:
@@ -186,21 +223,33 @@ def assign_gates_to_arrivals(): #Assigna gates a tots els vols carregats.
 
 
 def plot_gate_occupancy():
+    global canvas_picture
     if not bcn_airport:
         messagebox.showwarning("Warning", "LEBL structure not loaded.")
         return
+    fig = plot_airport_schema(bcn_airport)  # Llamamos directamente a la función que dibuja el mapa tipo esquema que pusimos en LEBL.py
+    canvas = FigureCanvasTkAgg(fig, master=picture_frame)  # Crea el canvas dins el picture_frame
+    canvas.draw() # Dibuixa la figura
+    if canvas_picture is not None:
+        canvas_picture.grid_forget()  # Elimina el plot anterior si n'hi havia
+    canvas_picture = canvas.get_tk_widget() # Obté el widget de tkinter
+    canvas_picture.config(width=600, height=400)# Configura la mida del widget
+    canvas_picture.grid(row=0, column=0, padx=5, pady=5, sticky="nsew")  # Col·loca el widget a la interfície
 
-    # Llamamos directamente a la función que dibuja el mapa tipo esquema
-    # que pusimos en LEBL.py
-    plot_airport_schema(bcn_airport)
 
 root = tk.Tk()
 root.title("Airport Manager v2 (Erika, Gerard, Dmitri)")
 root.geometry("850x650")
 
+
+root.columnconfigure(0, weight=1)   # Zona de botones
+root.columnconfigure(1, weight=1)   # Data Console a la derecha
+root.rowconfigure(0, weight=0)
+root.rowconfigure(1, weight=5) # Zona inferior para gráficos
+
 # Contenedor pels botons superiors (dividit en 2 columnes)
 top_frame = tk.Frame(root)
-top_frame.pack(side="top", fill="x", padx=10, pady=5)
+top_frame.grid(row=0, column=0, sticky="nw", padx=10, pady=5)
 
 # Frame per Aeroports (Esquerra)
 frame_left = tk.LabelFrame(top_frame, text=" Airport Management ", padx=10, pady=10)
@@ -242,13 +291,22 @@ tk.Button(frame_right, text="Plot Schengen Origin Flights", command=plot_type).p
 tk.Button(frame_right, text="Map Flight Trajectories (KML)", command=map_flights).pack(fill="x", pady=2)
 tk.Button(frame_right, text="Check Long Distance Flights", command=check_long_distance).pack(fill="x", pady=2)
 
-# Secció inferior per veure les dades
+# Secció a la dreta per veure les dades
 display_frame = tk.LabelFrame(root, text=" Data Console ")
-display_frame.pack(side="bottom", fill="both", expand=True, padx=15, pady=10)
+display_frame.grid(row=0, column=1, sticky="new", padx=10, pady=10)
 
-# Àrea de text central perquè quedi més bonic
-text = tk.Text(display_frame, height=15,  font=("Courier", 10))
-text.pack(side="left", fill="both", expand=True)
+display_frame.rowconfigure(0, weight=1)
+display_frame.columnconfigure(0, weight=1)
+
+text = tk.Text(display_frame, font=("Courier", 10))
+text.grid(row=0, column=0, sticky="nsew")
+text.config(height=12)
+
+#Secció de plots a baix de tot, que aprofitin tot l'espai possible
+picture_frame = tk.Frame(root, bg="white", height=700)
+picture_frame.grid(row=1, column=0, columnspan=2, sticky="nsew", padx=10, pady=10)
+picture_frame.rowconfigure(0, weight=1)
+picture_frame.columnconfigure(0, weight=1)
 
 # Frame per LEBL Gate Management (Centre o Dreta)
 frame_gates = tk.LabelFrame(top_frame, text=" LEBL Gate Management ", padx=10, pady=10)

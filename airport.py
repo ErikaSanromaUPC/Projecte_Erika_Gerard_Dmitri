@@ -115,12 +115,13 @@ def PlotAirports (airports): #TODO: S'ha de posar amb 2 barres stacked          
             schengen += 1
         i+=1
     non_schengen=len(airports)-schengen
-    plt.bar("Airports", [schengen], color="#e1c9ff", label="Schengen")
-    plt.bar("Airports", [non_schengen], bottom=[schengen], color="#ccffc9", label="No Schengen")
-    plt.title("Schengen Airports")
-    plt.ylabel("Count")
-    plt.legend()
-    plt.show()
+    fig, ax = plt.subplots()  # Crea la figura i els eixos
+    ax.bar("Airports", [schengen], color="#e1c9ff", label="Schengen")  # Barra Schengen
+    ax.bar("Airports", [non_schengen], bottom=[schengen], color="#ccffc9",label="No Schengen")  # Barra No Schengen
+    ax.set_title("Schengen Airports")
+    ax.set_ylabel("Count")
+    ax.legend()
+    return fig  # Retorna la figura per mostrar-la a la interfície
 
 def MapAirports(airports, filename="airports.kml"):
     with open (filename, "w") as f:
