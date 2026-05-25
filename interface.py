@@ -5,7 +5,7 @@ from aircraft import *
 from LEBL import * # Importa classes BarcelonaAP, Terminal, etc.
 import os
 import platform
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 import matplotlib.pyplot as plt
 
 airports = []
@@ -402,15 +402,22 @@ def ShowHourlyMap():
 
 
 def EmbedPlotInGui():
-    """Captura la figura actual de matplotlib i la incrusta al plot_frame de la GUI."""
+    """Captura la figura actual de matplotlib i la incrusta al plot_frame de la GUI amb barra de zoom."""
     global current_canvas
 
     if current_canvas is not None:
         current_canvas.get_tk_widget().destroy()
+        # Destrueix també la toolbar anterior si existeix
+        for widget in plot_frame.winfo_children():
+            widget.destroy()
 
     fig = plt.gcf()
     current_canvas = FigureCanvasTkAgg(fig, master=plot_frame)
     current_canvas.draw()
+
+    toolbar = NavigationToolbar2Tk(current_canvas, plot_frame)
+    toolbar.update()
+
     current_canvas.get_tk_widget().pack(fill="both", expand=True)
     plot_frame.update_idletasks()
 

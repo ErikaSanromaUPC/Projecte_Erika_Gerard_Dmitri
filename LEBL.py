@@ -535,10 +535,6 @@ def PlotDayOccupancy(bcn, aircrafts):
 
         t1_occupancy.append(t1_count)
         t2_occupancy.append(t2_count)
-        if h == 8 or h == 14 or h == 20:  # Miramos las horas punta: 8 AM, 2 PM, 8 PM
-            print(f"--- ESTADO A LAS {time_str} ---")
-            print(f"T1 Ocupadas: {t1_count} | T2 Ocupadas: {t2_count}")
-            print(f"Aviones esperando en Taxiway: {delayed_count}")
         h += 1
 
     # --- PINTAR EL PLOT ---
