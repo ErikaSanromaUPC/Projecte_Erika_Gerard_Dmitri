@@ -296,7 +296,7 @@ def plot_airport_schema(bcn):  # Dibuixar mapa visual
     ax.set_xlim(-2, terminal_x)
     ax.set_ylim(0, 17)
     ax.axis('off')
-    plt.tight_layout()
+    plt.tight_layout(rect=[0, 0, 1, 0.95]) # Ajusta tots els plots, deixant el 5% superior lliure perquè el títol superior càpiga sense solapar-se
 
 
 def MergeMovements(arrivals, departures):
