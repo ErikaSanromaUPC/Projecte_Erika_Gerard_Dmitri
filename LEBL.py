@@ -1,4 +1,4 @@
-import os
+﻿import os
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from aircraft import Aircraft
@@ -47,7 +47,7 @@ def LoadAirlines(terminal,t_name): # Llegeix les aerolinies dels txt
             lines = data.splitlines()
             i = 0
             while i < len(lines):
-                parts = lines[i].strip().split('\t')  # Format: Nom \t ICAO strip treu els espaxis dels extrems
+                parts = lines[i].strip().split('\t')  # Format: Nom \t ICAO strip treu els espais dels extrems
                 if len(parts) >= 2:
                     icao_code = parts[1]
                     terminal.airlines.append(icao_code)
@@ -138,7 +138,7 @@ def IsAirlineInTerminal(terminal, name):
     indice = 0
     cantidad = len(aerolineas)
 
-    # 2. Recorremos la lista manualmente (si está vacía, no entra al while)
+    # 2. Recorremos la lista manualmente (si estÃ¡ vacía, no entra al while)
     while indice < cantidad:
         if aerolineas[indice] == name:
             return True, 0  # Encontrada, código 0 (sin error)
@@ -300,41 +300,66 @@ def plot_airport_schema(bcn):  # Dibuixar mapa visual
 
 
 def MergeMovements(arrivals, departures):
-    """Combina llistes d'arribades i sortides en una llista única basánt-se en l'ID de l'avió."""
-    if len(arrivals) == 0 or len(departures) == 0:
-        return [], -1
-
+    """Combina arribades i sortides en una llista cronologica, amb emparellat 1-a-1 per matricula."""
     merged_list = []
 
-    # 1. Copia tots els arrivals a la nova llista merged_list
+    # 1. Copia tots els arrivals a la nova llista
     i = 0
+    # Bucle per recórrer un per un tots els avions que arriben (arrivals)
     while i < len(arrivals):
         arr = arrivals[i]
-        # Creem una còpia per no alterar la llista original
+
+        # Creem una còpia de l'avió d'arribada
         new_aircraft = Aircraft(arr.aircraft_id, arr.airline, arr.origin_airport, arr.arrival_time)
         new_aircraft.arrival_time = arr.arrival_time
+
+        # Deixem la sortida buida per defecte per saber que encara no té cap sortida assignada
+        new_aircraft.departure_time = ""
+
         merged_list.append(new_aircraft)
         i += 1
 
-    # 2. Recorre els departures i busca si coincideix amb algun arrival existent
     j = 0
+    # Recorre cada departure per trobar la seva parella
     while j < len(departures):
         dep = departures[j]
-        found = False
+
+        #Conversió de l'hora a minuts per trobar la departure que encaixi mes
+        dep_hour = int(dep.departure_time.split(':')[0])
+        dep_min = int(dep.departure_time.split(':')[1])
+        dep_total = dep_hour * 60 + dep_min
+
+        best_index = -1
+        best_arrival_total = -1
+
         k = 0
+        # Busca dins de la merged list quina arribada encaixa millor
         while k < len(merged_list):
             existing = merged_list[k]
-            # Si coincideixen en ID i l'avió arriba abans de departure
-            if existing.aircraft_id == dep.aircraft_id:
-                if existing.arrival_time < dep.departure_time:
-                    # Mesclem les dades
-                    existing.destination_airport = dep.destination_airport #La destination de l'arrival = La destinació del departure
-                    existing.departure_time = dep.departure_time #Temps departure de l'arrival = Temps departure del departure
-                    found = True
+
+            # Si mateixa matrícula d'avió i l'arribada està "lliure"
+            if existing.aircraft_id == dep.aircraft_id and existing.departure_time == "":
+
+                # Convertim l'hora d'arribada actual a minuts totals del dia
+                arr_hour = int(existing.arrival_time.split(':')[0])
+                arr_min = int(existing.arrival_time.split(':')[1])
+                arr_total = arr_hour * 60 + arr_min
+
+                # L'arribada ha de ser menor o igual a la sortida (arr_total <= dep_total)
+                # I a més busquem la més propera al departure
+                if arr_total <= dep_total and arr_total > best_arrival_total:
+                    best_arrival_total = arr_total  # Actualitzem el temps de la millor arribada trobada fins ara
+                    best_index = k  # Guardem la posició d'aquest avió
             k += 1
-        # Si no s'ha trobat cap, és un avió nocturn ("night aircraft")
-        if not found:
-            night_aircraft = Aircraft(dep.aircraft_id, dep.airline, "")
+
+        # Comprovem si hem trobat una arribada que encaixi
+        if best_index != -1:
+            # Si la trobem, assignem el destí i l'hora de sortida a aquesta arribada
+            merged_list[best_index].destination_airport = dep.destination_airport
+            merged_list[best_index].departure_time = dep.departure_time
+        else:
+            # Si no hi ha cap arrival prèvia lliure, significa que l'avió és un night aircraft
+            night_aircraft = Aircraft(dep.aircraft_id, dep.airline, dep.destination_airport)
             night_aircraft.destination_airport = dep.destination_airport
             night_aircraft.departure_time = dep.departure_time
             merged_list.append(night_aircraft)
@@ -342,7 +367,6 @@ def MergeMovements(arrivals, departures):
         j += 1
 
     return merged_list, 0
-
 
 def ResetAirport(bcn):
     """Posa totes les gates de l'aeroport en estat lliure i buides, serveix per les funcions dels assign gates amb els departures i arrivals"""
@@ -416,26 +440,49 @@ def FreeGate(bcn, aircraft_id):
                 k += 1
             j += 1
         i += 1
-    return -1 #Error Avió no trobat a cap gate
+    return -1 #Error avió no trobat a cap gate
 
 
-def AssignGatesAtTime(bcn, aircrafts, current_time,waiting_list):
+def TimeToMinutes(time_str):
+    """Converteix una hora HH:MM a minuts totals."""
+    hour = int(time_str.split(':')[0])
+    minute = int(time_str.split(':')[1])
+    return hour * 60 + minute
+
+
+def AssignGatesAtTime(bcn, aircrafts, current_time, waiting_list):
     """Allibera gates d'avions que ja s'han enlairat i assigna noves gates per una franja d'1 hora"""
-    # current_time ve en format "01:00", "02:00", ...
-    start_hour = int(current_time.split(':')[0])
-    # 1. PROCESSAR SORTIDES (Avions que marxen a aquesta hora)
+    # current_time ve en format "HH:MM"
+    start_min = TimeToMinutes(current_time)
+    end_min = start_min + 59
+
+    # 1. Netejar esperes caducades: si la seva sortida ja ha passat, ja no pot seguir esperant
+    w = 0
+    while w < len(waiting_list):
+        waiting_aircraft = waiting_list[w]
+
+        if waiting_aircraft.departure_time != "":
+            dep_total = TimeToMinutes(waiting_aircraft.departure_time)
+            if dep_total < start_min:
+                waiting_list.pop(w)  # Borrem i no sumem 'w' perque el pop ja el passa al següent
+            else:
+                w += 1
+        else:
+            w += 1
+
+    # 2. PROCESSAR SORTIDES (Avions que marxen a aquesta hora)
     # Alliberem primer els avions que ja estaven d'abans i s'enlairen ara
     i = 0
     while i < len(aircrafts):
         actual_aircraft = aircrafts[i]
         if actual_aircraft.departure_time != "":
-            departure_hour = int(actual_aircraft.departure_time.split(':')[0])
-            if departure_hour == start_hour:
+            dep_total = TimeToMinutes(actual_aircraft.departure_time)
+            if dep_total >= start_min and dep_total <= end_min:
                 FreeGate(bcn, actual_aircraft.aircraft_id)
         i += 1
 
-# 2. INTENTAR APARCAR AVIONS DE LA LLISTA D'ESPERA
-    # Com que s'han alliberat portes, mirem si els que esperaven de abans poden entrar
+    # 3. INTENTAR APARCAR AVIONS DE LA LLISTA D'ESPERA
+    # Com que s'han alliberat portes, mirem si els que esperaven d'abans poden entrar
     w = 0
     while w < len(waiting_list):
         waiting_aircraft = waiting_list[w]
@@ -445,20 +492,21 @@ def AssignGatesAtTime(bcn, aircrafts, current_time,waiting_list):
             waiting_list.pop(w)
             # Gestionem si és una escala súper curta a la mateixa hora
             if waiting_aircraft.departure_time != "":
-                dep_hour = int(waiting_aircraft.departure_time.split(':')[0])
-                # Si l'hora d'arribada ja ha sortit O JA HA PASSAT llavors l'avió fa el desembarcament/embarcament exprés i se'n va JA
-                if dep_hour <= start_hour:
+                dep_total = TimeToMinutes(waiting_aircraft.departure_time)
+                # Si la seva sortida és dins d'aquesta hora, l'alliberem ja
+                if dep_total <= end_min:
                     FreeGate(bcn, waiting_aircraft.aircraft_id)
             # No incrementem 'w' perquè hem eliminat un element i la llista s'ha mogut
         else:
             w += 1
-# 2. PROCESSAR ARRIBADES (Avions que aterren a aquesta hora)
+
+    # 4. PROCESSAR ARRIBADES (Avions que aterren a aquesta hora)
     j = 0
     while j < len(aircrafts):
         actual_aircraft = aircrafts[j]
         if actual_aircraft.arrival_time != "":
-            arrival_hour = int(actual_aircraft.arrival_time.split(':')[0])
-            if arrival_hour == start_hour:
+            arr_total = TimeToMinutes(actual_aircraft.arrival_time)
+            if arr_total >= start_min and arr_total <= end_min:
                 # El busquem a veure si ja té porta (per si de cas)
                 gate_name = AssignGate(bcn, actual_aircraft)
                 if gate_name == -1:
@@ -467,12 +515,12 @@ def AssignGatesAtTime(bcn, aircrafts, current_time,waiting_list):
                 else:
                     # Bloc d'escala curta normal a la mateixa hora
                     if actual_aircraft.departure_time != "":
-                        dep_hour = int(actual_aircraft.departure_time.split(':')[0])
-                        if dep_hour == start_hour:
+                        dep_total = TimeToMinutes(actual_aircraft.departure_time)
+                        if dep_total >= start_min and dep_total <= end_min:
                             FreeGate(bcn, actual_aircraft.aircraft_id)
         j += 1
 
-    #Retornem quants avions s'han quedat encallats esperant a la pista de rodatge en aquesta hora
+    # Retornem quants avions s'han quedat encallats esperant a la pista de rodatge en aquesta hora
     return len(waiting_list)
 
 

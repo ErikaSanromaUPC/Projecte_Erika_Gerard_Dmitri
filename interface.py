@@ -60,8 +60,12 @@ def LoadDeparturesAuto():
         var_res = LoadDepartures(filename)
         departures = var_res[0]
         code = var_res[1]
+        total_lines = var_res[2]
+        valid_lines = var_res[3]
+        invalid_lines = var_res[4]
         if code == 0:
-            print(f"[INFO] Departures loaded automatically. Total: {len(departures)}")
+            print(f"[INFO] Departures loaded automatically. Total loaded flights: {len(departures)}")
+            print(f"[INFO] Departures summary: read={total_lines}, valid={valid_lines}, invalid={invalid_lines}")
         else:
             print(f"[ERROR] Could not auto-load Departures file correctly.")
     else:
@@ -318,9 +322,13 @@ def LoadDeparturesFile():
     filename = filedialog.askopenfilename(filetypes=[("Text files", "*.txt")])
     if filename:
         global departures
-        departures, code = LoadDepartures(filename)
+        departures, code, total_lines, valid_lines, invalid_lines = LoadDepartures(filename)
         if code == 0:
-            PrintToLog("Departures Loaded", f"Successfully loaded {len(departures)} schedule flight departures.")
+            log_msg = f"Successfully loaded {len(departures)} scheduled flight departures.\n" \
+                      f"Lines read: {total_lines}\n" \
+                      f"Valid lines: {valid_lines}\n" \
+                      f"Invalid lines: {invalid_lines}"
+            PrintToLog("Departures Loaded", log_msg)
         else:
             messagebox.showerror("Error", "Could not load departures file.")
 

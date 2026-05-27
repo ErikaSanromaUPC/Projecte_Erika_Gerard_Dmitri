@@ -11,29 +11,72 @@ def LoadArrivals(filename):
         with open(filename, 'r') as arrivals_file:
             data = arrivals_file.read() #data és per llegir totes les línies del text
             Lines = data.splitlines() #Lines és per separar cada línia del text
+            total_lines = 0 #Comprovacions (en el departures.txt hi havia una línia amb mal format)
+            valid_lines = 0
+            invalid_lines = 0
             i = 1
             while i < len(Lines):
-                try:
-                    parts = Lines[i].split()
-                    # Si la línia no té exactament 4 parts, s'ignora automàticament
-                    if len(parts) == 4:
-                        aircraft_id = parts[0]
-                        origin_airport = parts[1]
-                        arrival_time = parts[2]
-                        airline = parts[3]
+                total_lines += 1
+                line = Lines[i].strip()
+                parts = line.split()
 
-                        if len(arrival_time) == 4: #Per si de cas perquè en els departures hi havia algunes hores que no seguien el format HH:MM
-                            arrival_time = "0" + arrival_time
+                es_valida = True
+                motivo_error = ""
 
-                        if arrival_time[-3] == ":":
-                            new_aircraft = Aircraft(aircraft_id, airline, origin_airport, arrival_time)
-                            arrivals_list.append(new_aircraft)
-                except Exception:
-                    # Si hi ha qualsevol error intern amb les dades d'aquesta línia, es passa a la següent de forma segura
-                    pass
+                # Validació columnes
+                if len(parts) != 4:
+                    es_valida = False
+                    motivo_error = "invalid number of columns"
+
+                if es_valida:
+                    aircraft_id = parts[0]
+                    origin_airport = parts[1]
+                    arrival_time = parts[2]
+                    airline = parts[3]
+
+                    if len(arrival_time) == 4:
+                        arrival_time = "0" + arrival_time
+
+                    # Validació de camps
+                    if aircraft_id == "":
+                        es_valida = False
+                        motivo_error = "empty AIRCRAFT"
+                    elif len(origin_airport) != 4 or not origin_airport.isalpha():
+                        es_valida = False
+                        motivo_error = f"invalid ORIGIN '{origin_airport}'"
+                    elif len(airline) != 3 or not airline.isalpha():
+                        es_valida = False
+                        motivo_error = f"invalid AIRLINE '{airline}'"
+                    elif len(arrival_time) != 5 or arrival_time[2] != ":":
+                        es_valida = False
+                        motivo_error = f"invalid time format '{arrival_time}'"
+                    else:
+                        # Validació de números de l'hora de forma segura
+                        try:
+                            arr_hour = int(arrival_time[0:2])
+                            arr_min = int(arrival_time[3:5])
+
+                            if arr_hour < 0 or arr_hour > 23 or arr_min < 0 or arr_min > 59:
+                                es_valida = False
+                                motivo_error = f"time out of range '{arrival_time}'"
+                        except Exception:
+                            es_valida = False
+                            motivo_error = f"non-numeric time '{arrival_time}'"
+
+                if es_valida:
+                    new_aircraft = Aircraft(aircraft_id, airline, origin_airport, arrival_time)
+                    arrivals_list.append(new_aircraft)
+                    valid_lines += 1
+                else:
+                    invalid_lines += 1
+                    print(f"[ARRIVALS] Line {i+1} discarded: {motivo_error} -> '{Lines[i]}'")
 
                 i += 1
+        print(f"[ARRIVALS] Load summary: read={total_lines}, valid={valid_lines}, invalid={invalid_lines}")
     except FileNotFoundError:
+        return []
+    except Exception as e:
+        print(f"[ARRIVALS] Unexpected error loading file: {e}")
         return []
     return arrivals_list
 
@@ -44,36 +87,78 @@ def LoadDepartures(filename):
         with open(filename, 'r') as departures_file:
             data = departures_file.read()
             Lines = data.splitlines()
+            total_lines = 0
+            valid_lines = 0
+            invalid_lines = 0
             i = 1
+
             while i < len(Lines):
-                try:
-                    parts = Lines[i].split()
-                    # Si la línia no té com a mínim 4 parts, s'ignora automàticament
-                    if len(parts) >= 4:
-                        aircraft_id = parts[0]
-                        destination = parts[1]
-                        departure_time = parts[2]
-                        airline = parts[3]
+                total_lines += 1
+                line = Lines[i].strip()
+                parts = line.split()
 
-                        # Creem Aircraft buidant les dades d'arribada però posant bé el format de les hores perquè no hi hagi problemes
-                        if len(departure_time) == 4:
-                            departure_time = "0" + departure_time
+                es_valida = True
+                motivo_error = ""
 
-                        new_aircraft = Aircraft(aircraft_id, airline)
-                        new_aircraft.destination_airport = destination
-                        new_aircraft.departure_time = departure_time
-                        departures_list.append(new_aircraft)
-                except Exception:
-                    # Si hi ha qualsevol error intern amb les dades d'aquesta línia, es passa a la següent de forma segura
-                    pass
+                # 1. Validació columnes
+                if len(parts) != 4:
+                    es_valida = False
+                    motivo_error = f"invalid number of columns"
 
+                if es_valida:
+                    aircraft_id = parts[0]
+                    destination = parts[1]
+                    departure_time = parts[2]
+                    airline = parts[3]
+
+                    if len(departure_time) == 4:
+                        departure_time = "0" + departure_time
+
+                    # 2. Validació de camps
+                    if aircraft_id == "":
+                        es_valida = False
+                        motivo_error = "empty AIRCRAFT"
+                    elif len(destination) != 4 or not destination.isalpha():
+                        es_valida = False
+                        motivo_error = f"invalid DESTINATION '{destination}'"
+                    elif len(airline) != 3 or not airline.isalpha():
+                        es_valida = False
+                        motivo_error = f"invalid AIRLINE '{airline}'"
+                    elif len(departure_time) != 5 or departure_time[2] != ":":
+                        es_valida = False
+                        motivo_error = f"invalid time format '{departure_time}'"
+                    else:
+                        # 3. Validació de números de l'hora de forma segura
+                        try:
+                            dep_hour = int(departure_time[0:2])
+                            dep_min = int(departure_time[3:5])
+
+                            if dep_hour < 0 or dep_hour > 23 or dep_min < 0 or dep_min > 59:
+                                es_valida = False
+                                motivo_error = f"time out of range '{departure_time}'"
+                        except Exception:
+                            es_valida = False
+                            motivo_error = f"non-numeric time '{departure_time}'"
+
+                # Processem el resultat de la línia al final
+                if es_valida:
+                    new_aircraft = Aircraft(aircraft_id, airline)
+                    new_aircraft.destination_airport = destination
+                    new_aircraft.departure_time = departure_time
+                    departures_list.append(new_aircraft)
+                    valid_lines += 1
+                else:
+                    invalid_lines += 1
+                    print(f"[DEPARTURES] Line {i+1} discarded: {motivo_error} -> '{Lines[i]}'")
                 i += 1
-        return departures_list, 0
-    except FileNotFoundError:
-        return [], -1
-    except Exception:
-        return [], -1
 
+        print(f"[DEPARTURES] Load summary: read={total_lines}, valid={valid_lines}, invalid={invalid_lines}")
+        return departures_list, 0, total_lines, valid_lines, invalid_lines
+    except FileNotFoundError:
+        return [], -1, 0, 0, 0
+    except Exception as e:
+        print(f"[DEPARTURES] Unexpected error loading file: {e}")
+        return [], -1, 0, 0, 0
 
 class Aircraft:
     def __init__(self, aircraft_id, airline, origin_airport="", arrival_time=""):
