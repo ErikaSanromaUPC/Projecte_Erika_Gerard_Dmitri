@@ -575,7 +575,7 @@ def PlotDayOccupancy(bcn, aircrafts):
 
     h = 0
     while h < 24:
-        # Posa en formar d'hora: "00:00", "01:00"...
+        # Posa en format d'hora "HH:MM"
         if h < 10:
             time_str = f"0{h}:00"
         else:
@@ -583,9 +583,10 @@ def PlotDayOccupancy(bcn, aircrafts):
 
         hours_labels.append(time_str)
 
-        redirected_before = len(redirected_list)
+        redirected_before = len(redirected_list) # Guardem quants desviaments havia abans d'aquesta hora
         delayed_count = AssignGatesAtTime(bcn, aircrafts, time_str, waiting_list, redirected_list)
-        redirected_this_hour = len(redirected_list) - redirected_before
+        redirected_this_hour = len(redirected_list) - redirected_before #Obtenim els avions redirigits d'aquesta hora fent la resta
+        # Guardem els resultats horaris a les llistes de log
         waiting_flights_log.append(delayed_count)
         redirected_flights_log.append(redirected_this_hour)
 
@@ -593,7 +594,7 @@ def PlotDayOccupancy(bcn, aircrafts):
         t1_count = 0
         t2_count = 0
 
-        # Recompte manual T1
+        # Recompte T1
         areas_t1 = bcn.terminals[0].boarding_areas
         a = 0
         while a < len(areas_t1):
@@ -605,7 +606,7 @@ def PlotDayOccupancy(bcn, aircrafts):
                 g += 1
             a += 1
 
-        # Recompte manual T2
+        # Recompte T2
         areas_t2 = bcn.terminals[1].boarding_areas
         a = 0
         while a < len(areas_t2):
@@ -624,18 +625,51 @@ def PlotDayOccupancy(bcn, aircrafts):
     # --- PINTAR EL PLOT ---
     fig = plt.gcf()
     fig.set_size_inches(14, 6)
-    plt.plot(hours_labels, t1_occupancy, label='T1 Occupied Gates', color='#1a5276', marker='o')
-    plt.plot(hours_labels, t2_occupancy, label='T2 Occupied Gates', color='#e67e22', marker='s')
-    plt.bar(hours_labels, waiting_flights_log, label='Aircrafts Waiting on Taxiway', color='#e74c3c', alpha=0.6)
-    plt.bar(hours_labels, redirected_flights_log, label='Aircrafts Redirected (No Terminal)', color='#7f8c8d', alpha=0.55)
 
+    # Genera llista d'eix X
+    x_positions = []
+    idx_x = 0
+    while idx_x < len(hours_labels):
+        x_positions.append(idx_x)
+        idx_x += 1
+
+    bar_width = 0.40
+
+    # Dibuixa línies de l'ocupació de les terminals
+    plt.plot(x_positions, t1_occupancy, label='T1 Occupied Gates', color='#1a5276', marker='o')
+    plt.plot(x_positions, t2_occupancy, label='T2 Occupied Gates', color='#e67e22', marker='s')
+
+    # Dibuixa les barres paral·leles
+    idx_bar = 0
+    while idx_bar < len(x_positions):
+        val_x = x_positions[idx_bar]
+        # Desplaça la barra de taxiway a l'esquerra i la de desviaments a la dreta del centre (val_x)
+        pos_taxiway = val_x - bar_width / 2
+        pos_redirected = val_x + bar_width / 2
+
+        if idx_bar == 0: # A la primera passada posem la label, a les següents ja no perquè si no queden repetides.
+            lbl_taxiway = 'Aircrafts Waiting on Taxiway'
+            lbl_redirected = 'Aircrafts Redirected (No Terminal)'
+        else:
+            lbl_taxiway = ''
+            lbl_redirected = ''
+
+        plt.bar(pos_taxiway, waiting_flights_log[idx_bar], width=bar_width, #Barra de taxiway
+                color='#e74c3c', alpha=0.6, label=lbl_taxiway)
+        plt.bar(pos_redirected, redirected_flights_log[idx_bar], width=bar_width, #Barra de redirected
+                color='#7f8c8d', alpha=0.55, label=lbl_redirected)
+
+        idx_bar += 1
+
+    # Configuració de l'esquema visual
     plt.title("LEBL 24-Hour Dynamic Simulation (With Taxiway Holding Queue)", fontsize=14, fontweight='bold')
     plt.xlabel("Hour of the Day")
     plt.ylabel("Number of Aircrafts")
-    plt.xticks(rotation=45)
+    plt.xticks(x_positions)
     plt.grid(True, linestyle='--', alpha=0.5)
     plt.legend()
     plt.tight_layout()
+
 
 # --- TEST SECTION ---
 if __name__ == "__main__":
