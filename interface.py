@@ -298,14 +298,18 @@ def AssignGatesToArrivals():  # Assigna gates a tots els vols carregats.
         return
 
     assigned_count = 0
+    redirected_count = 0 # Avions que la seva aerolínia no opera ni a la T1 ni a la T2
     i = 0
     while i < len(arrivals):
         gate_name = AssignGate(bcn_airport, arrivals[i])
         if gate_name != -1:
             assigned_count += 1
+        elif not HasValidTerminalForAirline(bcn_airport, arrivals[i]):
+            redirected_count += 1
         i += 1
     PrintToLog("Gate Assignment",
-                 f"Assignment process complete.\nSuccessfully routed {assigned_count}/{len(arrivals)} aircrafts to available gates.")
+                 f"Assignment process complete.\nSuccessfully routed {assigned_count}/{len(arrivals)} aircrafts to available gates.\n"
+                 f"Redirected aircrafts (airline without terminal at LEBL): {redirected_count}.")
 
 
 def PlotGateOccupancy():
@@ -352,9 +356,18 @@ def RunDynamicSimulation():
         night_code = result_night[1]
         if night_code == 0:
             night_assigned = AssignNightGates(bcn_airport, night_list)
+            invalid_airline_count = 0
+            idx = 0
+            while idx < len(all_movements):
+                # Usamos tu nueva función
+                if HasValidTerminalForAirline(bcn_airport, all_movements[idx]) == False:
+                    invalid_airline_count += 1
+                idx += 1
+            # ----------------------------------------------
 
             log_msg = f"Merged total operations: {len(all_movements)} daily flights.\n" \
-                      f"Night aircrafts parked at gates at 00:00: {night_assigned}\n\n" \
+                      f"Night aircrafts parked at gates at 00:00: {night_assigned}\n" \
+                      f"Alert: {invalid_airline_count} flights belong to unassigned airlines!\n\n" \
                       f"Ready to check hourly airport maps or continuous plots."
             PrintToLog("Simulation Base Ready", log_msg)
         else:
@@ -386,14 +399,19 @@ def ShowHourlyMap():
         AssignNightGates(bcn_airport, res_night[0])
 
     gui_waiting_list = []
+    gui_redirected_list = []
 
+    redirected_this_hour = 0
     h = 0
     while h <= hour:
         if h < 10:
             time_str = f"0{h}:00"
         else:
             time_str = f"{h}:00"
-        AssignGatesAtTime(bcn_airport, all_movements, time_str, gui_waiting_list)
+        redirected_before = len(gui_redirected_list)
+        AssignGatesAtTime(bcn_airport, all_movements, time_str, gui_waiting_list, gui_redirected_list)
+        if h == hour:
+            redirected_this_hour = len(gui_redirected_list) - redirected_before
         h += 1
 
     plt.clf()
@@ -405,6 +423,9 @@ def ShowHourlyMap():
         status_msg += f"TAXIWAY WARNING: There are {len(gui_waiting_list)} aircrafts holding on taxiways due to full gates."
     else:
         status_msg += "TAXIWAY CLEAR: Ground traffic is moving fluently. No delays reported."
+
+    if redirected_this_hour > 0:
+        status_msg += f"\nREDIRECTED: {redirected_this_hour} aircrafts cannot operate at LEBL (their airline has no terminal here), so they were diverted."
 
     PrintToLog(f"Status at {hour:02d}:00", status_msg)
 
@@ -445,7 +466,7 @@ plt.ioff()
 
 root = tk.Tk()
 root.title("Airport Manager v2 (Erika, Gerard, Dmitri)")
-root.geometry("950x650")
+root.geometry("1200x750")
 
 top_frame = tk.Frame(root)
 top_frame.pack(side="top", fill="x", padx=10, pady=5)

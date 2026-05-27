@@ -199,6 +199,19 @@ def AssignGate(bcn, aircraft): # Busca la primera porta lliure segons terminal i
     return -1  # Per si no hi ha portes lliures
 
 
+def HasValidTerminalForAirline(bcn, aircraft):
+    """Retorna True si l'aerolínia de l'avió opera en alguna terminal de l'aeroport."""
+    if not bcn or not aircraft:
+        return False
+
+    t_name = SearchTerminal(bcn, aircraft.airline)
+
+    if t_name != "":
+        return True
+    else:
+        return False
+
+
 def plot_airport_schema(bcn):  # Dibuixar mapa visual
     if not bcn:
         return
@@ -450,7 +463,7 @@ def TimeToMinutes(time_str):
     return hour * 60 + minute
 
 
-def AssignGatesAtTime(bcn, aircrafts, current_time, waiting_list):
+def AssignGatesAtTime(bcn, aircrafts, current_time, waiting_list, redirected_list=None):
     """Allibera gates d'avions que ja s'han enlairat i assigna noves gates per una franja d'1 hora"""
     # current_time ve en format "HH:MM"
     start_min = TimeToMinutes(current_time)
@@ -486,19 +499,30 @@ def AssignGatesAtTime(bcn, aircrafts, current_time, waiting_list):
     w = 0
     while w < len(waiting_list):
         waiting_aircraft = waiting_list[w]
-        gate_name = AssignGate(bcn, waiting_aircraft)
-        if gate_name != -1:
-            # Si troba porta, el treiem de la llista d'espera
+
+        # Comprovem si l'aerolínia és vàlida amb HasValidTerminalForAirline
+        is_valid = HasValidTerminalForAirline(bcn, waiting_aircraft)
+
+        if is_valid == False:
+            if redirected_list is not None:
+                redirected_list.append(waiting_aircraft)
             waiting_list.pop(w)
-            # Gestionem si és una escala súper curta a la mateixa hora
-            if waiting_aircraft.departure_time != "":
-                dep_total = TimeToMinutes(waiting_aircraft.departure_time)
-                # Si la seva sortida és dins d'aquesta hora, l'alliberem ja
-                if dep_total <= end_min:
-                    FreeGate(bcn, waiting_aircraft.aircraft_id)
-            # No incrementem 'w' perquè hem eliminat un element i la llista s'ha mogut
+            # No sumem w ja que en fer el pop l'element següent ja té la posició correcta
         else:
-            w += 1
+            # Si l'aerolínia és vàlida, fem l'assignació normal
+            gate_name = AssignGate(bcn, waiting_aircraft)
+            if gate_name != -1:
+                # Si troba porta, el traiem de la llista d'espera
+                waiting_list.pop(w)
+                # Si és una escala súper curta a la mateixa hora
+                if waiting_aircraft.departure_time != "":
+                    dep_total = TimeToMinutes(waiting_aircraft.departure_time)
+                    # Si la seva sortida és dins d'aquesta hora, l'alliberem ja
+                    if dep_total <= end_min:
+                        FreeGate(bcn, waiting_aircraft.aircraft_id)
+                # No incrementem 'w' perquè hem eliminat un element i la llista s'ha mogut
+            else:
+                w += 1
 
     # 4. PROCESSAR ARRIBADES (Avions que aterren a aquesta hora)
     j = 0
@@ -510,17 +534,24 @@ def AssignGatesAtTime(bcn, aircrafts, current_time, waiting_list):
                 # El busquem a veure si ja té porta (per si de cas)
                 gate_name = AssignGate(bcn, actual_aircraft)
                 if gate_name == -1:
-                    # EN LLOC DE PERDRE'S, VA A LA LLISTA D'ESPERA
-                    waiting_list.append(actual_aircraft)
+                    # Guardem el booleà de si l'aerolínia és vàlida
+                    is_valid_arr = HasValidTerminalForAirline(bcn, actual_aircraft)
+
+                    if is_valid_arr == False:
+                        if redirected_list is not None:
+                            redirected_list.append(actual_aircraft)
+                    else:
+                        # Si és vàlida però no hi ha gate lliure se'n va a la waiting list
+                        waiting_list.append(actual_aircraft)
                 else:
-                    # Bloc d'escala curta normal a la mateixa hora
+                    # Escala curta normal a la mateixa hora
                     if actual_aircraft.departure_time != "":
                         dep_total = TimeToMinutes(actual_aircraft.departure_time)
                         if dep_total >= start_min and dep_total <= end_min:
                             FreeGate(bcn, actual_aircraft.aircraft_id)
         j += 1
 
-    # Retornem quants avions s'han quedat encallats esperant a la pista de rodatge en aquesta hora
+    # Retornem la waiting_list en aquesta hora
     return len(waiting_list)
 
 
@@ -539,6 +570,8 @@ def PlotDayOccupancy(bcn, aircrafts):
     t2_occupancy = []
     waiting_flights_log = []
     waiting_list = []
+    redirected_flights_log = []
+    redirected_list = []
 
     h = 0
     while h < 24:
@@ -550,8 +583,11 @@ def PlotDayOccupancy(bcn, aircrafts):
 
         hours_labels.append(time_str)
 
-        delayed_count = AssignGatesAtTime(bcn, aircrafts, time_str, waiting_list)
+        redirected_before = len(redirected_list)
+        delayed_count = AssignGatesAtTime(bcn, aircrafts, time_str, waiting_list, redirected_list)
+        redirected_this_hour = len(redirected_list) - redirected_before
         waiting_flights_log.append(delayed_count)
+        redirected_flights_log.append(redirected_this_hour)
 
         # Comptem quantes gates té ocupades la T1 i la T2 en aquest moment
         t1_count = 0
@@ -591,6 +627,7 @@ def PlotDayOccupancy(bcn, aircrafts):
     plt.plot(hours_labels, t1_occupancy, label='T1 Occupied Gates', color='#1a5276', marker='o')
     plt.plot(hours_labels, t2_occupancy, label='T2 Occupied Gates', color='#e67e22', marker='s')
     plt.bar(hours_labels, waiting_flights_log, label='Aircrafts Waiting on Taxiway', color='#e74c3c', alpha=0.6)
+    plt.bar(hours_labels, redirected_flights_log, label='Aircrafts Redirected (No Terminal)', color='#7f8c8d', alpha=0.55)
 
     plt.title("LEBL 24-Hour Dynamic Simulation (With Taxiway Holding Queue)", fontsize=14, fontweight='bold')
     plt.xlabel("Hour of the Day")
