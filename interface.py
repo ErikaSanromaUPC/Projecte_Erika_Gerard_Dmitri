@@ -465,7 +465,7 @@ def ShowFullDayPlots():
 plt.ioff()
 
 root = tk.Tk()
-root.title("Airport Manager v2 (Erika, Gerard, Dmitri)")
+root.title("Airport Manager v4 (Erika, Gerard, Dmitri)")
 root.geometry("1200x750")
 
 top_frame = tk.Frame(root)
