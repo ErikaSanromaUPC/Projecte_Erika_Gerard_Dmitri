@@ -254,6 +254,25 @@ def MapFlightsManual():  # Genera el mapa KML de trajectories cap a LEBL.
                 messagebox.showerror("Error", f"Could not open file: {e}")
 
 
+def MapDepFlightsManual():  # Genera el mapa KML de trajectories des de LEBL.
+    if not departures or not airports:
+        messagebox.showwarning("Warning", "Need both airports and departures loaded.")
+        return
+    filename = "departures_trajectories.kml"
+    res = MapDepartures(departures, airports, "departures_trajectories.kml")
+    if res != -1:
+        if messagebox.askyesno("Success", f"KML '{filename}' created. Do you want to open it now?"):
+            try:
+                if platform.system() == "Windows":
+                    os.startfile(filename)
+                elif platform.system() == "Darwin":  # macOS
+                    os.system(f"open {filename}")
+                else:  # Linux
+                    os.system(f"xdg-open {filename}")
+            except Exception as e:
+                messagebox.showerror("Error", f"Could not open file: {e}")
+
+
 def CheckLongDistance():  # Mostra al log els vols que requereixen inspecció (>2000km).
     if not arrivals or not airports:
         messagebox.showwarning("Warning", "Need both airports and arrivals loaded.")
@@ -526,6 +545,7 @@ tk.Button(frame_right, text="Plot Arrival Frequency", command=PlotArrivalsManual
 tk.Button(frame_right, text="Plot Flights per Airline", command=PlotAirlinesManual).pack(fill="x", pady=2)
 tk.Button(frame_right, text="Plot Schengen Origin Flights", command=PlotTypeManual).pack(fill="x", pady=2)
 tk.Button(frame_right, text="Map Flight Trajectories (KML)", command=MapFlightsManual).pack(fill="x", pady=2)
+tk.Button(frame_right, text="Map Departures Trajectories (KML)", command=MapDepFlightsManual).pack(fill="x", pady=2)
 tk.Button(frame_right, text="Check Long Distance Flights", command=CheckLongDistance).pack(fill="x", pady=2)
 tk.Button(frame_right, text="Map Long Distance (KML)", command=MapLongDistanceFlightsManual, bg="#e1c9ff").pack(fill="x", pady=2)
 

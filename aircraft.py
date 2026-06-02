@@ -310,6 +310,47 @@ def MapFlights(aircrafts, airports,filename="flights.kml"):
     return filename
 
 
+def MapDepartures(aircrafts, airports, filename="departures.kml"):
+    LEBL = FindAirport(airports, "LEBL")
+    # Si LEBL no està al file d'aeroports que marqui error
+    if LEBL == -1:
+        print("Error: LEBL coordinates not found in the airports list. Cannot plot trajectories.")
+        return -1
+    with open(filename, "w") as f:
+        f.write('<kml xmlns="http://www.opengis.net/kml/2.2">\n')
+        f.write('<Document>\n')
+        f.write('<name>Departure Trajectories from LEBL</name>\n')
+        i = 0
+        while i < len(aircrafts):
+            airport_destination = FindAirport(airports, aircrafts[i].destination_airport)
+            if airport_destination != -1:
+                if airport_destination.schengen:
+                    color = "ffffc9e1"
+                else:
+                    color = "ffc9ffcc"
+                f.write(f"""    
+                            <Placemark>
+                                <name>{aircrafts[i].aircraft_id} (LEBL to {aircrafts[i].destination_airport})</name>
+                                <Style>
+                                    <LineStyle>
+                                        <color>{color}</color>
+                                        <width>3</width>
+                                    </LineStyle>
+                                </Style>
+                                <LineString>
+                                    <tessellate>1</tessellate>
+                                    <altitudeMode>clampToGround</altitudeMode>
+                                    <coordinates>
+                                        {LEBL.longitude},{LEBL.latitude},0 {airport_destination.longitude},{airport_destination.latitude},0
+                                    </coordinates>
+                                </LineString>
+                            </Placemark>
+                                """)
+            i += 1
+        f.write("</Document>\n</kml>")
+    return filename
+
+
 def MapLongDistanceFlights(aircrafts, airports, filename="flights.kml"):
     LEBL = FindAirport(airports, "LEBL")
     # Si LEBL no està al file d'aeroports que marqui error
